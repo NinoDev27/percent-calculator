@@ -632,7 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   } */
 
-  async function fetchEtfPrice(symbol){
+ /** async function fetchEtfPrice(symbol){
   // Stooq CSV (usually delayed)
   const stooqUrl = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcv&h&e=csv`;
 
@@ -652,7 +652,28 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!Number.isFinite(close)) throw new Error("No price");
 
   return close;
+} */
+
+  async function fetchEtfPrice(symbol){
+  const stooqUrl = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcv&h&e=csv`;
+
+  // CORS proxy
+  const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(stooqUrl);
+
+  const res = await fetch(proxyUrl, { cache: "no-store" });
+  if (!res.ok) throw new Error("Fetch failed");
+
+  const csv = await res.text();
+  const lines = csv.trim().split("\n");
+  if (lines.length < 2) throw new Error("Bad data");
+
+  const cols = lines[1].split(",");
+  const close = Number(cols[6]);
+  if (!Number.isFinite(close)) throw new Error("No price");
+
+  return close;
 }
+
 
   async function setBaseFromSymbol(symbol, btn){
 
