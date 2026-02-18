@@ -647,22 +647,22 @@ async function fetchEtfPrice(symbol){
 }
 
 async function fetchPriorWeekClose(symbol){
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=2&apikey=${API_KEY}`;
-
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=5&apikey=${API_KEY}`;
   const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Weekly fetch failed");
-
   const data = await res.json();
-  const values = data.values;
 
-  // values[0] = current week (in-progress), values[1] = prior completed week
+  if (data.status === "error") throw new Error(data.message || "API error");
+
+  const values = data.values;
   if (!Array.isArray(values) || values.length < 2) throw new Error("Not enough weekly data");
 
+  // values[0] can be current in-progress week. We want the prior completed week close:
   const close = Number(values[1].close);
-  if (!Number.isFinite(close)) throw new Error("No prior week close");
+  if (!Number.isFinite(close)) throw new Error("Bad close");
 
   return close;
 }
+
 
   
 const etfButtons = [btnSPY, btnQQQ, btnIWM];
@@ -684,6 +684,7 @@ function setActiveEtfButton(activeBtn){
 
       const px = usePriorWeekClose ? await fetchPriorWeekClose(symbol)  : await fetchLastPrice(symbol);
 
+      if (!Number.isFinite(px)) throw new Error("No price returned");
       baseEl.value = px.toFixed(2);
 
       baseEl.dispatchEvent(new Event("input", { bubbles:true }));
