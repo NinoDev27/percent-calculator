@@ -489,6 +489,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let usePriorWeekClose = false;
 
+  const btnW1 = document.getElementById("btnW1");
+
   function parseNum(v){
 
     if (typeof v !== "string") return NaN;
@@ -733,7 +735,7 @@ btnW1.addEventListener("click", async () => {
   // Controls
 
 
-const btnW1 = document.getElementById("btnW1");
+
 
 function updateW1UI(){
   btnW1.textContent = usePriorWeekClose ? "W-1: ON" : "W-1: OFF";
