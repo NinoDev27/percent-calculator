@@ -682,7 +682,7 @@ function setActiveEtfButton(activeBtn){
       btn.textContent = symbol + "…";
       statusEl.textContent = "Fetching " + symbol;
 
-      const px = usePriorWeekClose ? await fetchPriorWeekClose(symbol)  : await fetchEtfPrice(symbol);
+      const px = usePriorWeekClose ? await fetchPriorWeekClose(symbol)  : await fetchLastPrice(symbol);
 
       baseEl.value = px.toFixed(2);
 
