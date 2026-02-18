@@ -487,6 +487,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let activeSymbol = null;
 
+  let usePriorWeekClose = false;
+
   function parseNum(v){
 
     if (typeof v !== "string") return NaN;
@@ -707,7 +709,6 @@ function setActiveEtfButton(activeBtn){
 
   }
 
-
 btnSPY.addEventListener("click", () => setBaseFromSymbol("SPY", btnSPY));
 btnQQQ.addEventListener("click", () => setBaseFromSymbol("QQQ", btnQQQ));
 btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
@@ -734,7 +735,7 @@ btnW1.addEventListener("click", async () => {
 
   // Controls
 
-let usePriorWeekClose = false;
+
 const btnW1 = document.getElementById("btnW1");
 
 function updateW1UI(){
