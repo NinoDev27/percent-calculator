@@ -485,6 +485,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let focusMode = true;
 
+  let activeSymbol = null;
+
   function parseNum(v){
 
     if (typeof v !== "string") return NaN;
@@ -669,7 +671,8 @@ function setActiveEtfButton(activeBtn){
   async function setBaseFromSymbol(symbol, btn){
 
     const old = btn.textContent;
-
+    activeSymbol = symbol; 
+    setActiveEtfButton(btn);
     try{
 
       btn.disabled = true;
@@ -704,20 +707,10 @@ function setActiveEtfButton(activeBtn){
 
   }
 
-btnSPY.addEventListener("click", () => {
-  setActiveEtfButton(btnSPY);
-  setBaseFromSymbol("SPY", btnSPY);
-});
 
-btnQQQ.addEventListener("click", () => {
-  setActiveEtfButton(btnQQQ);
-  setBaseFromSymbol("QQQ", btnQQQ);
-});
-
-btnIWM.addEventListener("click", () => {
-  setActiveEtfButton(btnIWM);
-  setBaseFromSymbol("IWM", btnIWM);
-});
+btnSPY.addEventListener("click", () => setBaseFromSymbol("SPY", btnSPY));
+btnQQQ.addEventListener("click", () => setBaseFromSymbol("QQQ", btnQQQ));
+btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
 
  baseEl.addEventListener("input", () => {
   etfButtons.forEach(b => b.classList.remove("active"));
