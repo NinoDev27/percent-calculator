@@ -1,0 +1,721 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="utf-8"/>
+
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<title>% Range Calculator</title>
+
+<style>
+
+:root{
+
+  --bg:#0b0f14;
+
+  --panel:#121826;
+
+  --panel-2:#0f1522;
+
+  --border:rgba(255,255,255,.08);
+
+  --border-2:rgba(255,255,255,.06);
+
+  --text:rgba(255,255,255,.92);
+
+  --muted:rgba(255,255,255,.60);
+
+  --muted2:rgba(255,255,255,.45);
+
+  --blue:#2d7dff;
+
+  --green:#2ee59d;
+
+  --red:#ff5c73;
+
+  --rowA:rgba(255,255,255,.015);
+
+  --rowB:rgba(255,255,255,.035);
+
+  --rowHover:rgba(255,255,255,.06);
+
+  --rowActive:rgba(45,125,255,.14);
+
+  --rowActiveBorder:rgba(45,125,255,.35);
+
+}
+
+*{box-sizing:border-box;}
+
+body{
+
+  margin:0;
+
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+
+  background:var(--bg);
+
+  color:var(--text);
+
+}
+
+.wrap{max-width:760px;margin:18px auto;padding:0 14px 22px;}
+
+.topbar{
+
+  display:flex;
+
+  justify-content:space-between;
+
+  align-items:center;
+
+  padding:10px 2px 14px;
+
+  color:var(--muted);
+
+  letter-spacing:.08em;
+
+  text-transform:uppercase;
+
+  font-weight:700;
+
+  font-size:12px;
+
+}
+
+.status{
+
+  color:rgba(255,255,255,.45);
+
+  font-weight:650;
+
+  letter-spacing:.04em;
+
+  text-transform:none;
+
+}
+
+.card{
+
+  background:linear-gradient(180deg,var(--panel) 0%,var(--panel-2) 100%);
+
+  border:1px solid var(--border);
+
+  border-radius:14px;
+
+  overflow:hidden;
+
+}
+
+.section{padding:14px;border-bottom:1px solid var(--border-2);}
+
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+
+.grid2{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
+
+.field label{
+
+  font-size:11px;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;
+
+  display:block;margin:2px 2px 6px;
+
+}
+
+.input{
+
+  width:100%;
+
+  padding:12px;
+
+  border-radius:12px;
+
+  border:1px solid var(--border);
+
+  background:rgba(255,255,255,.03);
+
+  color:var(--text);
+
+  font-size:16px;
+
+  outline:none;
+
+}
+
+.input:focus{
+
+  border-color:rgba(45,125,255,.55);
+
+  box-shadow:0 0 0 3px rgba(45,125,255,.14);
+
+}
+
+.btnRow{
+
+  display:flex;gap:10px;flex-wrap:wrap;
+
+  padding:14px;border-bottom:1px solid var(--border-2);
+
+}
+
+button{
+
+  border:1px solid var(--border);
+
+  background:rgba(255,255,255,.04);
+
+  color:var(--text);
+
+  padding:10px 12px;
+
+  border-radius:12px;
+
+  font-size:14px;
+
+  font-weight:650;
+
+  cursor:pointer;
+
+  user-select:none;
+
+}
+
+button:active{transform:translateY(1px);}
+
+button:disabled{opacity:.55;cursor:default;}
+
+.primary{
+
+  background:rgba(45,125,255,.16);
+
+  border-color:rgba(45,125,255,.35);
+
+}
+
+.chip{
+
+  padding:10px 12px;
+
+  border-radius:999px;
+
+  background:rgba(255,255,255,.04);
+
+}
+
+.chip.primary{
+
+  background:rgba(45,125,255,.14);
+
+  border-color:rgba(45,125,255,.28);
+
+}
+
+.error{
+
+  display:none;
+
+  padding:12px 14px;
+
+  color:var(--red);
+
+  border-bottom:1px solid var(--border-2);
+
+  font-size:13px;
+
+}
+
+/* TABLE */
+
+table{
+
+  width:100%;
+
+  border-collapse:collapse;
+
+  table-layout:fixed;
+
+  font-variant-numeric:tabular-nums;
+
+}
+
+thead th{
+
+  position:sticky;top:0;z-index:2;
+
+  background:rgba(18,24,38,.96);
+
+  border-bottom:1px solid var(--border-2);
+
+  color:var(--muted);
+
+  font-size:11px;
+
+  letter-spacing:.08em;
+
+  text-transform:uppercase;
+
+  padding:12px 14px;
+
+  text-align:center;
+
+}
+
+/* widths tuned */
+
+th.colP, td.colP{ width:34%; text-align:left; }
+
+th.colMinus, td.colMinus{ width:33%; text-align:right; }
+
+th.colPlus, td.colPlus{ width:33%; text-align:right; }
+
+tbody tr{cursor:pointer;transition:background .12s ease,opacity .12s ease;}
+
+tbody tr:nth-child(odd){background:var(--rowA);}
+
+tbody tr:nth-child(even){background:var(--rowB);}
+
+tbody tr:hover{background:var(--rowHover);}
+
+tbody tr.is-active{
+
+  background:var(--rowActive)!important;
+
+  box-shadow:inset 3px 0 0 0 var(--rowActiveBorder);
+
+}
+
+tbody.has-active tr:not(.is-active){opacity:.55;}
+
+tbody td{
+
+  padding:14px 14px;
+
+  border-bottom:1px solid var(--border-2);
+
+  font-size:16px;
+
+  white-space:nowrap;
+
+}
+
+.pct{font-weight:650;}
+
+.neg{color:var(--red);font-weight:650;}
+
+.pos{color:var(--green);font-weight:650;}
+
+.hint{padding:12px 14px;font-size:12px;color:var(--muted2);}
+
+@media (max-width:520px){
+
+  .grid{grid-template-columns:1fr 1fr;}
+
+  .grid .field:nth-child(3){grid-column:1 / -1;}
+
+  tbody td{padding:12px 12px;font-size:15px;}
+
+  thead th{padding:11px 12px;}
+
+  th.colP, td.colP{width:34%;}
+
+  th.colMinus, td.colMinus{width:33%;}
+
+  th.colPlus, td.colPlus{width:33%;}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="wrap">
+
+  <div class="topbar">
+
+    <div>% Range Calculator</div>
+
+    <div class="status" id="status">0DTE-ready</div>
+
+  </div>
+
+  <div class="card">
+
+    <div class="section">
+
+      <div class="grid">
+
+        <div class="field">
+
+          <label>Base value</label>
+
+          <input id="base" class="input" inputmode="decimal" value="1000"/>
+
+        </div>
+
+        <div class="field">
+
+          <label>Step (%)</label>
+
+          <input id="step" class="input" inputmode="decimal" value="0.5"/>
+
+        </div>
+
+        <div class="field">
+
+          <label>Max (%)</label>
+
+          <input id="max" class="input" inputmode="decimal" value="5"/>
+
+        </div>
+
+      </div>
+
+      <div class="grid2">
+
+        <div class="field">
+
+          <label>Decimals</label>
+
+          <input id="decimals" class="input" inputmode="numeric" value="2"/>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="btnRow">
+
+      <!-- ETF quick fill -->
+
+      <button class="chip primary" id="btnSPY" type="button">SPY</button>
+
+      <button class="chip" id="btnQQQ" type="button">QQQ</button>
+
+      <button class="chip" id="btnIWM" type="button">IWM</button>
+
+      <!-- controls -->
+
+      <button class="primary" id="calc" type="button">Calculate</button>
+
+      <button id="auto" type="button">Auto: ON</button>
+
+      <button id="focus" type="button">Focus: ON</button>
+
+      <button id="clear" type="button">Clear</button>
+
+    </div>
+
+    <div id="err" class="error"></div>
+
+    <table id="tbl">
+
+      <thead>
+
+        <tr>
+
+          <th class="colP">%</th>
+
+          <th class="colMinus">-</th>
+
+          <th class="colPlus">+</th>
+
+        </tr>
+
+      </thead>
+
+      <tbody id="tbody"></tbody>
+
+    </table>
+
+    <div class="hint">Tap a row to lock highlight. Use SPY/QQQ/IWM buttons to auto-fill base.</div>
+
+  </div>
+
+</div>
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const $ = (id) => document.getElementById(id);
+
+  const baseEl = $("base");
+
+  const stepEl = $("step");
+
+  const maxEl  = $("max");
+
+  const decEl  = $("decimals");
+
+  const errEl = $("err");
+
+  const bodyEl = $("tbody");
+
+  const statusEl = $("status");
+
+  const btnSPY = $("btnSPY");
+
+  const btnQQQ = $("btnQQQ");
+
+  const btnIWM = $("btnIWM");
+
+  const calcBtn = $("calc");
+
+  const autoBtn = $("auto");
+
+  const focusBtn = $("focus");
+
+  const clearBtn = $("clear");
+
+  let swapped = false;        // kept for future if you re-add swap
+
+  let autoCalc = true;
+
+  let focusMode = true;
+
+  function parseNum(v){
+
+    if (typeof v !== "string") return NaN;
+
+    v = v.trim().replace(",", ".");
+
+    return v === "" ? NaN : Number(v);
+
+  }
+
+  function clampDecimals(v){
+
+    const n = Math.floor(parseNum(v));
+
+    if (!Number.isFinite(n)) return 2;
+
+    return Math.max(0, Math.min(10, n));
+
+  }
+
+  function fmt(n, decimals){
+
+    return Number.isFinite(n) ? n.toFixed(decimals) : "";
+
+  }
+
+  function showError(msg){
+
+    errEl.textContent = msg;
+
+    errEl.style.display = "block";
+
+  }
+
+  function clearError(){
+
+    errEl.textContent = "";
+
+    errEl.style.display = "none";
+
+  }
+
+  function clearSelection(){
+
+    bodyEl.classList.remove("has-active");
+
+    bodyEl.querySelectorAll("tr.is-active").forEach(tr => tr.classList.remove("is-active"));
+
+  }
+
+  function applyFocusClass(){
+
+    const hasActive = !!bodyEl.querySelector("tr.is-active");
+
+    bodyEl.classList.toggle("has-active", focusMode && hasActive);
+
+  }
+
+  function buildTable(){
+
+    const base = parseNum(baseEl.value);
+
+    const step = parseNum(stepEl.value);
+
+    const max  = parseNum(maxEl.value);
+
+    const decimals = clampDecimals(decEl.value);
+
+    if (!Number.isFinite(base)) return showError("Enter a valid base value (e.g., 685).");
+
+    if (!Number.isFinite(step) || step <= 0) return showError("Step must be a positive number (e.g., 0.5).");
+
+    if (!Number.isFinite(max)  || max  <= 0) return showError("Max (%) must be a positive number (e.g., 5).");
+
+    if (step > max) return showError("Step (%) cannot be greater than Max (%).");
+
+    clearError();
+
+    const count = Math.floor((max + 1e-12) / step);
+
+    bodyEl.innerHTML = "";
+
+    for (let i = 1; i <= count; i++){
+
+      const p = i * step;
+
+      const plusVal  = base * (1 + p/100);
+
+      const minusVal = base * (1 - p/100);
+
+      const tr = document.createElement("tr");
+
+      const pStr = (Math.round(p * 100) / 100).toString().replace(/\.0+$/,"").replace(/(\.\d)0$/,"$1");
+
+      tr.innerHTML = `
+
+        <td class="colP pct">${pStr}%</td>
+
+        <td class="colMinus neg">${fmt(minusVal, decimals)}</td>
+
+        <td class="colPlus pos">${fmt(plusVal, decimals)}</td>
+
+      `;
+
+      tr.addEventListener("click", () => {
+
+        const isActive = tr.classList.contains("is-active");
+
+        clearSelection();
+
+        if (!isActive) tr.classList.add("is-active");
+
+        applyFocusClass();
+
+      });
+
+      bodyEl.appendChild(tr);
+
+    }
+
+    applyFocusClass();
+
+  }
+
+  function maybeAuto(){ if (autoCalc) buildTable(); }
+
+  // ===== ETF price fetch (Stooq) =====
+
+  async function fetchEtfPrice(symbol){
+
+    // Usually delayed; works without API key.
+
+    const url = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcv&h&e=csv`;
+
+    const res = await fetch(url, { cache: "no-store" });
+
+    if (!res.ok) throw new Error("Fetch failed");
+
+    const csv = await res.text();
+
+    const lines = csv.trim().split("\n");
+
+    if (lines.length < 2) throw new Error("Bad response");
+
+    const cols = lines[1].split(",");
+
+    const close = Number(cols[6]);
+
+    if (!Number.isFinite(close)) throw new Error("No price");
+
+    return close;
+
+  }
+
+  async function setBaseFromSymbol(symbol, btn){
+
+    const old = btn.textContent;
+
+    try{
+
+      btn.disabled = true;
+
+      btn.textContent = symbol + "…";
+
+      statusEl.textContent = "Fetching " + symbol;
+
+      const px = await fetchEtfPrice(symbol);
+
+      baseEl.value = px.toFixed(2);
+
+      baseEl.dispatchEvent(new Event("input", { bubbles:true }));
+
+      statusEl.textContent = symbol + " set";
+
+      setTimeout(() => { statusEl.textContent = "0DTE-ready"; }, 1200);
+
+    }catch(e){
+
+      showError(`Could not fetch ${symbol} price (some previews block external fetch).`);
+
+      statusEl.textContent = "0DTE-ready";
+
+    }finally{
+
+      btn.disabled = false;
+
+      btn.textContent = old;
+
+    }
+
+  }
+
+  btnSPY.addEventListener("click", () => setBaseFromSymbol("SPY", btnSPY));
+
+  btnQQQ.addEventListener("click", () => setBaseFromSymbol("QQQ", btnQQQ));
+
+  btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
+
+  // Controls
+
+  calcBtn.addEventListener("click", buildTable);
+
+  autoBtn.addEventListener("click", () => {
+
+    autoCalc = !autoCalc;
+
+    autoBtn.textContent = `Auto: ${autoCalc ? "ON" : "OFF"}`;
+
+    if (autoCalc) buildTable();
+
+  });
+
+  focusBtn.addEventListener("click", () => {
+
+    focusMode = !focusMode;
+
+    focusBtn.textContent = `Focus: ${focusMode ? "ON" : "OFF"}`;
+
+    applyFocusClass();
+
+  });
+
+  clearBtn.addEventListener("click", clearSelection);
+
+  [baseEl, stepEl, maxEl, decEl].forEach(el => {
+
+    el.addEventListener("input", maybeAuto);
+
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") buildTable(); });
+
+  });
+
+  buildTable();
+
+});
+
+</script>
+
+</body>
+
+</html>
