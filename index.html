@@ -671,16 +671,13 @@ function setActiveEtfButton(activeBtn){
 }
 
   async function setBaseFromSymbol(symbol, btn){
-
+    console.log(activeSymbol);
     const old = btn.textContent;
     activeSymbol = symbol; 
     setActiveEtfButton(btn);
     try{
-
       btn.disabled = true;
-
       btn.textContent = symbol + "…";
-
       statusEl.textContent = "Fetching " + symbol;
 
       const px = usePriorWeekClose ? await fetchPriorWeekClose(symbol)  : await fetchEtfPrice(symbol);
