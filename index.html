@@ -654,25 +654,22 @@ document.addEventListener("DOMContentLoaded", () => {
   return close;
 } */
 
-  async function fetchEtfPrice(symbol){
-  const stooqUrl = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcv&h&e=csv`;
+const API_KEY = "03263123023e425fbe5ec22a54a12363";
 
-  // CORS proxy
-  const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(stooqUrl);
+async function fetchEtfPrice(symbol){
+  const url = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API_KEY}`;
 
-  const res = await fetch(proxyUrl, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("Fetch failed");
 
-  const csv = await res.text();
-  const lines = csv.trim().split("\n");
-  if (lines.length < 2) throw new Error("Bad data");
+  const data = await res.json();
+  const price = Number(data.price);
 
-  const cols = lines[1].split(",");
-  const close = Number(cols[6]);
-  if (!Number.isFinite(close)) throw new Error("No price");
+  if (!Number.isFinite(price)) throw new Error("No price");
 
-  return close;
+  return price;
 }
+
 
 
   async function setBaseFromSymbol(symbol, btn){
