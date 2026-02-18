@@ -673,8 +673,8 @@ async function fetchEtfPrice(symbol){
 const etfButtons = [btnSPY, btnQQQ, btnIWM];
 
 function setActiveEtfButton(activeBtn){
-  etfButtons.forEach(b => b.classList.remove("active"));
-  activeBtn.classList.add("active");
+  etfButtons.forEach(b => b.classList.remove("primary"));
+  activeBtn.classList.add("primary");
 }
 
   async function setBaseFromSymbol(symbol, btn){
