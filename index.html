@@ -407,6 +407,8 @@ tbody td{
 
       <button class="primary" id="calc" type="button">Calculate</button>
 
+      <button id="btnW1" class="">W-1: OFF</button>
+
       <button id="auto" type="button">Auto: ON</button>
 
       <button id="focus" type="button">Focus: ON</button>
@@ -609,58 +611,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function maybeAuto(){ if (autoCalc) buildTable(); }
 
-  // ===== ETF price fetch (Stooq) =====
-
-   /** async function fetchEtfPrice(symbol){
-
-    // Usually delayed; works without API key.
-
-    const url = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcv&h&e=csv`;
-
-    const res = await fetch(url, { cache: "no-store" });
-
-    if (!res.ok) throw new Error("Fetch failed");
-
-    const csv = await res.text();
-
-    const lines = csv.trim().split("\n");
-
-    if (lines.length < 2) throw new Error("Bad response");
-
-    const cols = lines[1].split(",");
-
-    const close = Number(cols[6]);
-
-    if (!Number.isFinite(close)) throw new Error("No price");
-
-    return close;
-
-  } */
-
- /** async function fetchEtfPrice(symbol){
-  // Stooq CSV (usually delayed)
-  const stooqUrl = `https://stooq.com/q/l/?s=${symbol.toLowerCase()}.us&f=sd2t2ohlcv&h&e=csv`;
-
-  // CORS proxy (returns raw content with permissive CORS headers)
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(stooqUrl)}`;
-
-  const res = await fetch(proxyUrl, { cache: "no-store" });
-  if (!res.ok) throw new Error("Quote fetch failed");
-
-  const csv = await res.text();
-  const lines = csv.trim().split("\n");
-  if (lines.length < 2) throw new Error("Bad quote response");
-
-  // header: Symbol,Date,Time,Open,High,Low,Close,Volume
-  const cols = lines[1].split(",");
-  const close = Number(cols[6]);
-  if (!Number.isFinite(close)) throw new Error("No price");
-
-  return close;
-} */
+  // ===== ETF price fetch  =====
 
 const API_KEY = "03263123023e425fbe5ec22a54a12363";
 
+/**
 async function fetchEtfPrice(symbol){
   const url = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API_KEY}`;
 
@@ -673,8 +628,37 @@ async function fetchEtfPrice(symbol){
   if (!Number.isFinite(price)) throw new Error("No price");
 
   return price;
+} */
+
+  async function fetchLastPrice(symbol){
+  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${API_KEY}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Quote fetch failed");
+  const data = await res.json();
+  const px = Number(data.close ?? data.price);
+  if (!Number.isFinite(px)) throw new Error("No last price");
+  return px;
 }
 
+async function fetchPriorWeekClose(symbol){
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=2&apikey=${API_KEY}`;
+
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("Weekly fetch failed");
+
+  const data = await res.json();
+  const values = data.values;
+
+  // values[0] = current week (in-progress), values[1] = prior completed week
+  if (!Array.isArray(values) || values.length < 2) throw new Error("Not enough weekly data");
+
+  const close = Number(values[1].close);
+  if (!Number.isFinite(close)) throw new Error("No prior week close");
+
+  return close;
+}
+
+  
 const etfButtons = [btnSPY, btnQQQ, btnIWM];
 
 function setActiveEtfButton(activeBtn){
@@ -694,13 +678,13 @@ function setActiveEtfButton(activeBtn){
 
       statusEl.textContent = "Fetching " + symbol;
 
-      const px = await fetchEtfPrice(symbol);
+      const px = usePriorWeekClose ? await fetchPriorWeekClose(symbol)  : await fetchEtfPrice(symbol);
 
       baseEl.value = px.toFixed(2);
 
       baseEl.dispatchEvent(new Event("input", { bubbles:true }));
 
-      statusEl.textContent = symbol + " set";
+      statusEl.textContent = usePriorWeekClose ? `${symbol} W-1 set` : `${symbol} live set`;
 
       setTimeout(() => { statusEl.textContent = "0DTE-ready"; }, 1200);
 
@@ -739,7 +723,39 @@ btnIWM.addEventListener("click", () => {
   etfButtons.forEach(b => b.classList.remove("active"));
 });
 
+btnW1.addEventListener("click", async () => {
+  try {
+    btnW1.disabled = true;
+    statusEl.textContent = "Fetching W-1 close…";
+
+    const w = await fetchPriorWeekClose(activeSymbol); // or hardcode "SPY"
+    baseEl.value = w.close.toFixed(2);
+    baseEl.dispatchEvent(new Event("input", { bubbles:true }));
+
+    statusEl.textContent = `W-1 close set (${w.datetime})`;
+    setTimeout(() => statusEl.textContent = "0DTE-ready", 1600);
+  } finally {
+    btnW1.disabled = false;
+  }
+});
+
   // Controls
+
+let usePriorWeekClose = false;
+const btnW1 = document.getElementById("btnW1");
+
+function updateW1UI(){
+  btnW1.textContent = usePriorWeekClose ? "W-1: ON" : "W-1: OFF";
+  btnW1.classList.toggle("primary", usePriorWeekClose); // uses your existing .primary style
+}
+
+btnW1.addEventListener("click", () => {
+  usePriorWeekClose = !usePriorWeekClose;
+  updateW1UI();
+});
+
+updateW1UI();
+
 
   calcBtn.addEventListener("click", buildTable);
 
