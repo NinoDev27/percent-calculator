@@ -670,7 +670,12 @@ async function fetchEtfPrice(symbol){
   return price;
 }
 
+const etfButtons = [btnSPY, btnQQQ, btnIWM];
 
+function setActiveEtfButton(activeBtn){
+  etfButtons.forEach(b => b.classList.remove("active"));
+  activeBtn.classList.add("active");
+}
 
   async function setBaseFromSymbol(symbol, btn){
 
@@ -710,11 +715,24 @@ async function fetchEtfPrice(symbol){
 
   }
 
-  btnSPY.addEventListener("click", () => setBaseFromSymbol("SPY", btnSPY));
+btnSPY.addEventListener("click", () => {
+  setActiveEtfButton(btnSPY);
+  setBaseFromSymbol("SPY", btnSPY);
+});
 
-  btnQQQ.addEventListener("click", () => setBaseFromSymbol("QQQ", btnQQQ));
+btnQQQ.addEventListener("click", () => {
+  setActiveEtfButton(btnQQQ);
+  setBaseFromSymbol("QQQ", btnQQQ);
+});
 
-  btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
+btnIWM.addEventListener("click", () => {
+  setActiveEtfButton(btnIWM);
+  setBaseFromSymbol("IWM", btnIWM);
+});
+
+ baseEl.addEventListener("input", () => {
+  etfButtons.forEach(b => b.classList.remove("active"));
+});
 
   // Controls
 
