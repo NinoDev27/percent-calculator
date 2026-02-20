@@ -712,10 +712,10 @@ btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
   etfButtons.forEach(b => b.classList.remove("active"));
 });
 
-btnW1.addEventListener("click", async () => {
+/**btnW1.addEventListener("click", async () => {
   try {
     btnW1.disabled = true;
-    statusEl.textContent = "Fetching W-1 close…";
+    statusEl.textContent = "Last week close activated";
 
     const w = await fetchPriorWeekClose(activeSymbol); // or hardcode "SPY"
     baseEl.value = w.close.toFixed(2);
@@ -726,12 +726,9 @@ btnW1.addEventListener("click", async () => {
   } finally {
     btnW1.disabled = false;
   }
-});
+});*/
 
   // Controls
-
-
-
 
 function updateW1UI(){
   btnW1.textContent = usePriorWeekClose ? "W-1: ON" : "W-1: OFF";
@@ -744,7 +741,6 @@ btnW1.addEventListener("click", () => {
 });
 
 updateW1UI();
-
 
   calcBtn.addEventListener("click", buildTable);
 
