@@ -231,6 +231,66 @@ button:disabled{opacity:.55;cursor:default;}
 
 }
 
+/* Webull-style change badge */
+.chgWrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px; /* keeps grid row height stable */
+}
+
+.chgBadge{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background:rgba(255,255,255,.03);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+  font-variant-numeric: tabular-nums;
+  line-height:1;
+}
+
+.chgBadge.is-hidden{ display:none; }
+
+.chgTf{
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted2);
+  padding:3px 8px;
+  border-radius:999px;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);
+}
+
+.chgArrow{
+  font-size:12px;
+  opacity:.95;
+}
+
+.chgVal{
+  font-size:14px;
+  font-weight:750;
+  letter-spacing:.01em;
+}
+
+/* Positive / negative styling */
+.chgBadge.is-pos{
+  border-color: rgba(120,196,153,.35);
+  background: rgba(120,196,153,.10);
+}
+.chgBadge.is-pos .chgArrow,
+.chgBadge.is-pos .chgVal{ color: var(--green); }
+
+.chgBadge.is-neg{
+  border-color: rgba(194,116,103,.35);
+  background: rgba(194,116,103,.10);
+}
+.chgBadge.is-neg .chgArrow,
+.chgBadge.is-neg .chgVal{ color: var(--red); }
+
 /* TABLE */
 
 table {
@@ -350,10 +410,18 @@ tbody td{
 
         <div class="field">
 
-          <label>Base value</label>
+          <label>Price</label>
 
           <input id="base" class="input" inputmode="decimal" value="1000"/>
 
+        </div>
+
+        <div id="chgWrap" class="chgWrap" aria-live="polite">
+          <div id="chgBadge" class="chgBadge is-hidden">
+            <span id="chgTf" class="chgTf">1W</span>
+            <span id="chgArrow" class="chgArrow">▲</span>
+            <span id="chgVal" class="chgVal">+0.00%</span>
+          </div>
         </div>
 
         <div class="field">
@@ -445,333 +513,286 @@ tbody td{
 document.addEventListener("DOMContentLoaded", () => {
 
   const $ = (id) => document.getElementById(id);
-
   const baseEl = $("base");
-
   const stepEl = $("step");
-
   const maxEl  = $("max");
-
   const decEl  = $("decimals");
-
   const errEl = $("err");
-
   const bodyEl = $("tbody");
-
   const statusEl = $("status");
-
   const btnSPY = $("btnSPY");
-
   const btnQQQ = $("btnQQQ");
-
   const btnIWM = $("btnIWM");
-
   const calcBtn = $("calc");
-
   const autoBtn = $("auto");
-
   const focusBtn = $("focus");
-
   const clearBtn = $("clear");
-
-  let swapped = false;        // kept for future if you re-add swap
-
-  let autoCalc = true;
-
-  let focusMode = true;
-
-  let activeSymbol = null;
-
-  let usePriorWeekClose = false;
-
+  const chgEl = $("chg");
+  const chgBadge = $("chgBadge");
+  const chgTf = $("chgTf");
+  const chgArrow = $("chgArrow");
+  const chgVal = $("chgVal");
   const btnW1 = document.getElementById("btnW1");
 
+  let swapped = false;        // kept for future if you re-add swap
+  let autoCalc = true;
+  let focusMode = true;
+  let activeSymbol = null;
+  let usePriorWeekClose = false;
+
+
   function parseNum(v){
-
     if (typeof v !== "string") return NaN;
-
     v = v.trim().replace(",", ".");
-
     return v === "" ? NaN : Number(v);
-
   }
 
   function clampDecimals(v){
-
     const n = Math.floor(parseNum(v));
-
     if (!Number.isFinite(n)) return 2;
-
     return Math.max(0, Math.min(10, n));
-
   }
 
   function fmt(n, decimals){
-
     return Number.isFinite(n) ? n.toFixed(decimals) : "";
-
   }
 
   function showError(msg){
-
     errEl.textContent = msg;
-
     errEl.style.display = "block";
-
   }
 
   function clearError(){
-
     errEl.textContent = "";
-
     errEl.style.display = "none";
-
   }
 
   function clearSelection(){
-
     bodyEl.classList.remove("has-active");
-
     bodyEl.querySelectorAll("tr.is-active").forEach(tr => tr.classList.remove("is-active"));
-
   }
 
   function applyFocusClass(){
-
     const hasActive = !!bodyEl.querySelector("tr.is-active");
-
     bodyEl.classList.toggle("has-active", focusMode && hasActive);
-
   }
 
   function buildTable(){
-
     const base = parseNum(baseEl.value);
-
     const step = parseNum(stepEl.value);
-
     const max  = parseNum(maxEl.value);
-
     const decimals = clampDecimals(decEl.value);
 
     if (!Number.isFinite(base)) return showError("Enter a valid base value (e.g., 685).");
-
     if (!Number.isFinite(step) || step <= 0) return showError("Step must be a positive number (e.g., 0.5).");
-
     if (!Number.isFinite(max)  || max  <= 0) return showError("Max (%) must be a positive number (e.g., 5).");
-
     if (step > max) return showError("Step (%) cannot be greater than Max (%).");
-
     clearError();
-
     const count = Math.floor((max + 1e-12) / step);
-
     bodyEl.innerHTML = "";
-
     for (let i = 1; i <= count; i++){
-
       const p = i * step;
-
       const plusVal  = base * (1 + p/100);
-
       const minusVal = base * (1 - p/100);
-
       const tr = document.createElement("tr");
-
       const pStr = (Math.round(p * 100) / 100).toString().replace(/\.0+$/,"").replace(/(\.\d)0$/,"$1");
-
       tr.innerHTML = `
-
         <td class="colP pct">${pStr}%</td>
-
         <td class="colMinus neg">${fmt(minusVal, decimals)}</td>
-
         <td class="colPlus pos">${fmt(plusVal, decimals)}</td>
-
       `;
 
       tr.addEventListener("click", () => {
-
         const isActive = tr.classList.contains("is-active");
-
         clearSelection();
-
         if (!isActive) tr.classList.add("is-active");
-
         applyFocusClass();
-
       });
-
       bodyEl.appendChild(tr);
-
     }
-
     applyFocusClass();
-
   }
 
   function maybeAuto(){ if (autoCalc) buildTable(); }
 
   // ===== ETF price fetch  =====
 
-const API_KEY = "03263123023e425fbe5ec22a54a12363";
+  const API_KEY = "03263123023e425fbe5ec22a54a12363";
+  const etfButtons = [btnSPY, btnQQQ, btnIWM];
 
-/**
-async function fetchEtfPrice(symbol){
-  const url = `https://api.twelvedata.com/price?symbol=${symbol}&apikey=${API_KEY}`;
+  async function fetchQuote(symbol){
+    const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${API_KEY}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("Quote fetch failed");
+    const data = await res.json();
+    if (data.status === "error") throw new Error(data.message || "API error");
+    const last = Number(data.close ?? data.price);
+    const prevClose = Number(data.previous_close);
+    const dayPct = Number(data.percent_change);
 
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Fetch failed");
+    if (!Number.isFinite(last)) throw new Error("No last price");
+    return { last, prevClose, dayPct, raw: data };
+  }
 
-  const data = await res.json();
-  const price = Number(data.price);
+  async function fetchPriorWeekClose(symbol){
+    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=5&apikey=${API_KEY}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json();
 
-  if (!Number.isFinite(price)) throw new Error("No price");
+    if (data.status === "error") throw new Error(data.message || "API error");
 
-  return price;
-} */
+    const values = data.values;
+    if (!Array.isArray(values) || values.length < 2) throw new Error("Not enough weekly data");
 
-  async function fetchLastPrice(symbol){
-  const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(symbol)}&apikey=${API_KEY}`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error("Quote fetch failed");
-  const data = await res.json();
-  const px = Number(data.close ?? data.price);
-  if (!Number.isFinite(px)) throw new Error("No last price");
-  return px;
-}
+    // values[0] can be current in-progress week. We want the prior completed week close:
+    const close = Number(values[1].close);
+    if (!Number.isFinite(close)) throw new Error("Bad close");
 
-async function fetchPriorWeekClose(symbol){
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=5&apikey=${API_KEY}`;
-  const res = await fetch(url, { cache: "no-store" });
-  const data = await res.json();
+    return close;
+  }
+    
+  function setChangeBadge({ tf, pct }) {
+    if (!Number.isFinite(pct)) {
+      chgBadge.classList.add("is-hidden");
+      chgBadge.classList.remove("is-pos","is-neg");
+      return;
+    }
 
-  if (data.status === "error") throw new Error(data.message || "API error");
+    const sign = pct >= 0 ? "+" : "";
+    chgTf.textContent = tf;                 // "1D" or "1W"
+    chgVal.textContent = `${sign}${pct.toFixed(2)}%`;
 
-  const values = data.values;
-  if (!Array.isArray(values) || values.length < 2) throw new Error("Not enough weekly data");
+    chgBadge.classList.remove("is-pos","is-neg","is-hidden");
+    if (pct >= 0) {
+      chgBadge.classList.add("is-pos");
+      chgArrow.textContent = "▲";
+    } else {
+      chgBadge.classList.add("is-neg");
+      chgArrow.textContent = "▼";
+    }
+  }
 
-  // values[0] can be current in-progress week. We want the prior completed week close:
-  const close = Number(values[1].close);
-  if (!Number.isFinite(close)) throw new Error("Bad close");
-
-  return close;
-}
-
-
-  
-const etfButtons = [btnSPY, btnQQQ, btnIWM];
-
-function setActiveEtfButton(activeBtn){
-  etfButtons.forEach(b => b.classList.remove("primary"));
-  activeBtn.classList.add("primary");
-}
+  function setActiveEtfButton(activeBtn){
+    etfButtons.forEach(b => b.classList.remove("primary"));
+    activeBtn.classList.add("primary");
+  }
 
   async function setBaseFromSymbol(symbol, btn){
     console.log(activeSymbol);
     const old = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = symbol + "…";
     activeSymbol = symbol; 
     setActiveEtfButton(btn);
     try{
-      btn.disabled = true;
-      btn.textContent = symbol + "…";
-      statusEl.textContent = "Fetching " + symbol;
+      const q = await fetchQuote(symbol);
+      let px;
+      if (usePriorWeekClose){
+        const w1 = await getPriorWeekCloseCached(symbol);   // usually cached
+        px = w1; // base becomes last week's close
+        const pct = ((q.last / w1) - 1) * 100;
+        const sign = pct >= 0 ? "+" : "";
+        setChangeBadge({ tf: "1W", pct });
+      }else{
+        px = q.last; // base becomes last/current price
 
-      const px = usePriorWeekClose ? await fetchPriorWeekClose(symbol)  : await fetchLastPrice(symbol);
+        // Prefer API-provided day %; fallback to compute
+        const dayPct = Number.isFinite(q.dayPct)
+          ? q.dayPct
+          : (Number.isFinite(q.prevClose) ? ((q.last / q.prevClose) - 1) * 100 : NaN);
+        if (Number.isFinite(dayPct)){
+          const sign = dayPct >= 0 ? "+" : "";
+          setChangeBadge({ tf: "1D", pct: dayPct });
+        }else{
+          setChangeBadge({ tf: "—", pct: NaN });
+        }
+      }
 
       if (!Number.isFinite(px)) throw new Error("No price returned");
       baseEl.value = px.toFixed(2);
-
-      baseEl.dispatchEvent(new Event("input", { bubbles:true }));
-
-      statusEl.textContent = usePriorWeekClose ? `${symbol} W-1 set` : `${symbol} live set`;
-
-      setTimeout(() => { statusEl.textContent = "0DTE-ready"; }, 1200);
+      maybeAuto()
+      statusEl.textContent = usePriorWeekClose ? `${symbol} Last week` : `${symbol} live price`;
+      setTimeout(() => { statusEl.textContent = "Ready"; }, 1200);
 
     }catch(e){
-
       showError(`Could not fetch ${symbol} price (some previews block external fetch).`);
-
-      statusEl.textContent = "0DTE-ready";
+      statusEl.textContent = "Ready";
 
     }finally{
-
       btn.disabled = false;
-
       btn.textContent = old;
+    }
+  }
 
+  function isoWeekKey(d = new Date()){
+    // ISO week key "YYYY-Www" (good enough for cache invalidation)
+    const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = date.getUTCDay() || 7;
+    date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,"0")}`;
+  }
+
+  async function getPriorWeekCloseCached(symbol){
+    const key = `w1close_${symbol}`;
+    const wk = isoWeekKey(new Date());
+    const cached = localStorage.getItem(key);
+    if (cached){
+      try{
+        const obj = JSON.parse(cached);
+        if (obj && obj.weekKey === wk && Number.isFinite(obj.close)) return obj.close;
+      }catch{}
     }
 
+    // cache miss → 1 API call (once per week per symbol)
+    const close = await fetchPriorWeekClose(symbol);
+    localStorage.setItem(key, JSON.stringify({ weekKey: wk, close }));
+    return close;
   }
 
-btnSPY.addEventListener("click", () => setBaseFromSymbol("SPY", btnSPY));
-btnQQQ.addEventListener("click", () => setBaseFromSymbol("QQQ", btnQQQ));
-btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
+  btnSPY.addEventListener("click", () => setBaseFromSymbol("SPY", btnSPY));
+  btnQQQ.addEventListener("click", () => setBaseFromSymbol("QQQ", btnQQQ));
+  btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
 
- baseEl.addEventListener("input", () => {
-  etfButtons.forEach(b => b.classList.remove("primary"));
-});
+  baseEl.addEventListener("input", () => {
+    etfButtons.forEach(b => b.classList.remove("primary"));
+    setChangeBadge({ tf: "—", pct: NaN });
+    activeSymbol = null;
+  });
 
-/**btnW1.addEventListener("click", async () => {
-  try {
-    btnW1.disabled = true;
-    statusEl.textContent = "Last week close activated";
+    // Controls
 
-    const w = await fetchPriorWeekClose(activeSymbol); // or hardcode "SPY"
-    baseEl.value = w.close.toFixed(2);
-    baseEl.dispatchEvent(new Event("input", { bubbles:true }));
-
-    statusEl.textContent = `W-1 close set (${w.datetime})`;
-    setTimeout(() => statusEl.textContent = "0DTE-ready", 1600);
-  } finally {
-    btnW1.disabled = false;
+  function updateW1UI(){
+    btnW1.textContent = usePriorWeekClose ? "1w: ON" : "1w: OFF";
+    btnW1.classList.toggle("primary", usePriorWeekClose); 
   }
-});*/
 
-  // Controls
+  btnW1.addEventListener("click", () => {
+    usePriorWeekClose = !usePriorWeekClose;
+    updateW1UI();
+  });
 
-function updateW1UI(){
-  btnW1.textContent = usePriorWeekClose ? "W-1: ON" : "W-1: OFF";
-  btnW1.classList.toggle("primary", usePriorWeekClose); // uses your existing .primary style
-}
-
-btnW1.addEventListener("click", () => {
-  usePriorWeekClose = !usePriorWeekClose;
   updateW1UI();
-});
-
-updateW1UI();
 
   calcBtn.addEventListener("click", buildTable);
-
   autoBtn.addEventListener("click", () => {
-
     autoCalc = !autoCalc;
-
     autoBtn.textContent = `Auto: ${autoCalc ? "ON" : "OFF"}`;
-
     if (autoCalc) buildTable();
-
   });
 
   focusBtn.addEventListener("click", () => {
-
     focusMode = !focusMode;
-
     focusBtn.textContent = `Focus: ${focusMode ? "ON" : "OFF"}`;
-
     applyFocusClass();
-
   });
 
   clearBtn.addEventListener("click", clearSelection);
 
   [baseEl, stepEl, maxEl, decEl].forEach(el => {
-
     el.addEventListener("input", maybeAuto);
-
     el.addEventListener("keydown", (e) => { if (e.key === "Enter") buildTable(); });
-
   });
 
   buildTable();
