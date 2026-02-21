@@ -25,6 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const chgArrow = $("chgArrow");
   const chgVal = $("chgVal");
 
+  const weekListEl = document.getElementById("weekList");
+  const weekSubEl  = document.getElementById("weekSub");    
+
   let autoCalc = true;
   let focusMode = true;
   let activeSymbol = null;
@@ -210,6 +213,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     activeSymbol = symbol;
     setActiveEtfButton(btn);
+    // weekly panel (cached; 1 call/week per symbol)
+    weekSubEl.textContent = `Loading ${symbol}…`;
+    getWeeklySeriesCached(symbol)
+      .then(values => renderWeeklyList(symbol, buildWeeklyRows(values)))
+      .catch(() => { weekSubEl.textContent = "Weekly data unavailable"; weekListEl.innerHTML = ""; });
 
     try{
       statusEl.textContent = "Fetching " + symbol;
@@ -247,6 +255,82 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.textContent = old;
     }
   }
+
+  async function fetchWeeklySeries(symbol){
+  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=60&apikey=${API_KEY}`;
+  const res = await fetch(url, { cache: "no-store" });
+  const data = await res.json();
+  if (data.status === "error") throw new Error(data.message || "API error");
+  if (!Array.isArray(data.values) || data.values.length < 2) throw new Error("Not enough weekly data");
+  return data.values; // newest-first
+}
+
+async function getWeeklySeriesCached(symbol){
+  const key = `w52_${symbol}`;
+  const wk = isoWeekKey(new Date());
+  const cached = localStorage.getItem(key);
+  if (cached){
+    try{
+      const obj = JSON.parse(cached);
+      if (obj && obj.weekKey === wk && Array.isArray(obj.values) && obj.values.length >= 2) return obj.values;
+    }catch{}
+  }
+  const values = await fetchWeeklySeries(symbol);
+  localStorage.setItem(key, JSON.stringify({ weekKey: wk, values }));
+  return values;
+}
+
+function buildWeeklyRows(values){
+  const rows = [];
+  const n = Math.min(values.length - 1, 52);
+  for (let i = 0; i < n; i++){
+    const cur = Number(values[i].close);
+    const prev = Number(values[i+1].close);
+    if (!Number.isFinite(cur) || !Number.isFinite(prev) || prev === 0) continue;
+    const pct = ((cur / prev) - 1) * 100;
+    rows.push({ datetime: values[i].datetime, close: cur, pct });
+  }
+  return rows;
+}
+
+let activeWeekIndex = null;
+
+function renderWeeklyList(symbol, rows){
+  weekSubEl.textContent = symbol ? `${symbol} • click a week to set Price` : "Select an ETF";
+  weekListEl.innerHTML = "";
+
+  rows.forEach((r, idx) => {
+    const item = document.createElement("div");
+    item.className = "weekItem" + (idx === activeWeekIndex ? " is-active" : "");
+
+    const pctClass = r.pct >= 0 ? "pos" : "neg";
+    const sign = r.pct >= 0 ? "+" : "";
+
+    item.innerHTML = `
+      <div class="weekLeft">
+        <div class="weekDate">${r.datetime}</div>
+        <div class="weekClose">Close: ${r.close.toFixed(2)}</div>
+      </div>
+      <div class="weekPct ${pctClass}">${sign}${r.pct.toFixed(2)}%</div>
+    `;
+
+    item.addEventListener("click", () => {
+      // highlight active
+      activeWeekIndex = idx;
+      weekListEl.querySelectorAll(".weekItem").forEach(el => el.classList.remove("is-active"));
+      item.classList.add("is-active");
+
+      // set base to that week close (no extra API calls)
+      baseEl.value = r.close.toFixed(2);
+      maybeAuto();
+
+      statusEl.textContent = "Weekly close set";
+      setTimeout(() => { statusEl.textContent = "Ready"; }, 900);
+    });
+
+    weekListEl.appendChild(item);
+  });
+}
 
   function updateW1UI(){
     btnW1.textContent = usePriorWeekClose ? "1w: ON" : "1w: OFF";
@@ -293,7 +377,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Init
   buildTable();
-  setBaseFromSymbol("SPY", btnSPY);
+  setBaseFromSymbol("SPX", btnSPY);
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js");
