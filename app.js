@@ -377,7 +377,7 @@ function renderWeeklyList(symbol, rows){
 
   // Init
   buildTable();
-  setBaseFromSymbol("SPX", btnSPY);
+  setBaseFromSymbol("SPY", btnSPY);
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js");
