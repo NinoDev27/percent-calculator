@@ -69,19 +69,30 @@
 
       <div id="err" class="error"></div>
 
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th class="colP">%</th>
-            <th class="colMinus">-</th>
-            <th class="colPlus">+</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+      <div class="split">
+        <div class="weekPanel">
+          <div class="weekHeader">
+            <div class="weekTitle">Weekly moves (52w)</div>
+            <div class="weekSub" id="weekSub">Select an ETF</div>
+          </div>
+          <div class="weekList" id="weekList"></div>
+        </div>
+
+        <div class="tablePanel">
+          <table id="tbl">
+            <thead>
+              <tr>
+                <th class="colP">%</th>
+                <th class="colMinus">-</th>
+                <th class="colPlus">+</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
 
       <div class="hint">Tap a row to lock highlight. Use SPY/QQQ/IWM buttons to auto-fill base.</div>
-    </div>
   </div>
 
   <script src="./app.js" defer></script>
