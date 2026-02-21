@@ -327,7 +327,7 @@ function renderWeeklyList(symbol, rows){
       statusEl.textContent = "Weekly close set";
       setTimeout(() => { statusEl.textContent = "Ready"; }, 900);
     });
-
+    weekSubEl.textContent = `${symbol} • ${rows.length} weeks loaded`;
     weekListEl.appendChild(item);
   });
 }
