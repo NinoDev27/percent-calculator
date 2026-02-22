@@ -28,10 +28,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const weekListEl = document.getElementById("weekList");
   const weekSubEl  = document.getElementById("weekSub");    
 
+  const emPtsEl = document.getElementById("emPts");
+
   let autoCalc = true;
   let focusMode = true;
   let activeSymbol = null;
   let usePriorWeekClose = false;
+
+  let expectedMovePts = NaN;
 
   const API_KEY = "03263123023e425fbe5ec22a54a12363";
   const etfButtons = [btnSPY, btnQQQ, btnIWM];
@@ -77,6 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const step = parseNum(stepEl.value);
     const max  = parseNum(maxEl.value);
     const decimals = clampDecimals(decEl.value);
+    const emPct = (Number.isFinite(expectedMovePts) && expectedMovePts > 0 && base > 0)
+      ? (expectedMovePts / base) * 100
+      : NaN;
+
 
     if (!Number.isFinite(base)) return showError("Enter a valid base value (e.g., 685).");
     if (!Number.isFinite(step) || step <= 0) return showError("Step must be a positive number (e.g., 0.5).");
@@ -87,6 +95,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const count = Math.floor((max + 1e-12) / step);
     bodyEl.innerHTML = "";
+    let bestTr = null;
+    let bestDiff = Infinity;
 
     for (let i = 1; i <= count; i++){
       const p = i * step;
@@ -98,6 +108,14 @@ document.addEventListener("DOMContentLoaded", () => {
         .toString()
         .replace(/\.0+$/,"")
         .replace(/(\.\d)0$/,"$1");
+
+            if (Number.isFinite(emPct)) {
+        const diff = Math.abs(p - emPct);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestTr = tr;
+        }
+      }
 
       tr.innerHTML = `
         <td class="colP pct">${pStr}%</td>
@@ -114,7 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       bodyEl.appendChild(tr);
     }
-
+    if (bestTr) bestTr.classList.add("is-em");
     applyFocusClass();
   }
 
@@ -213,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     activeSymbol = symbol;
     setActiveEtfButton(btn);
+    loadExpectedMove(symbol);
     // weekly panel (cached; 1 call/week per symbol)
     weekSubEl.textContent = `Loading ${symbol}…`;
     getWeeklySeriesCached(symbol)
@@ -263,74 +282,100 @@ document.addEventListener("DOMContentLoaded", () => {
   if (data.status === "error") throw new Error(data.message || "API error");
   if (!Array.isArray(data.values) || data.values.length < 2) throw new Error("Not enough weekly data");
   return data.values; // newest-first
-}
-
-async function getWeeklySeriesCached(symbol){
-  const key = `w52_${symbol}`;
-  const wk = isoWeekKey(new Date());
-  const cached = localStorage.getItem(key);
-  if (cached){
-    try{
-      const obj = JSON.parse(cached);
-      if (obj && obj.weekKey === wk && Array.isArray(obj.values) && obj.values.length >= 2) return obj.values;
-    }catch{}
   }
-  const values = await fetchWeeklySeries(symbol);
-  localStorage.setItem(key, JSON.stringify({ weekKey: wk, values }));
-  return values;
-}
 
-function buildWeeklyRows(values){
-  const rows = [];
-  const n = Math.min(values.length - 1, 52);
-  for (let i = 0; i < n; i++){
-    const cur = Number(values[i].close);
-    const prev = Number(values[i+1].close);
-    if (!Number.isFinite(cur) || !Number.isFinite(prev) || prev === 0) continue;
-    const pct = ((cur / prev) - 1) * 100;
-    rows.push({ datetime: values[i].datetime, close: cur, pct });
+  async function getWeeklySeriesCached(symbol){
+    const key = `w52_${symbol}`;
+    const wk = isoWeekKey(new Date());
+    const cached = localStorage.getItem(key);
+    if (cached){
+      try{
+        const obj = JSON.parse(cached);
+        if (obj && obj.weekKey === wk && Array.isArray(obj.values) && obj.values.length >= 2) return obj.values;
+      }catch{}
+    }
+    const values = await fetchWeeklySeries(symbol);
+    localStorage.setItem(key, JSON.stringify({ weekKey: wk, values }));
+    return values;
   }
-  return rows;
-}
 
-let activeWeekIndex = null;
+  function buildWeeklyRows(values){
+    const rows = [];
+    const n = Math.min(values.length - 1, 52);
+    for (let i = 0; i < n; i++){
+      const cur = Number(values[i].close);
+      const prev = Number(values[i+1].close);
+      if (!Number.isFinite(cur) || !Number.isFinite(prev) || prev === 0) continue;
+      const pct = ((cur / prev) - 1) * 100;
+      rows.push({ datetime: values[i].datetime, close: cur, pct });
+    }
+    return rows;
+  }
 
-function renderWeeklyList(symbol, rows){
-  weekSubEl.textContent = symbol ? `${symbol} • click a week to set Price` : "Select an ETF";
-  weekListEl.innerHTML = "";
+  let activeWeekIndex = null;
 
-  rows.forEach((r, idx) => {
-    const item = document.createElement("div");
-    item.className = "weekItem" + (idx === activeWeekIndex ? " is-active" : "");
+  function renderWeeklyList(symbol, rows){
+    weekSubEl.textContent = symbol ? `${symbol} • click a week to set Price` : "Select an ETF";
+    weekListEl.innerHTML = "";
 
-    const pctClass = r.pct >= 0 ? "pos" : "neg";
-    const sign = r.pct >= 0 ? "+" : "";
+    rows.forEach((r, idx) => {
+      const item = document.createElement("div");
+      item.className = "weekItem" + (idx === activeWeekIndex ? " is-active" : "");
 
-    item.innerHTML = `
-      <div class="weekLeft">
-        <div class="weekDate">${r.datetime}</div>
-        <div class="weekClose">Close: ${r.close.toFixed(2)}</div>
-      </div>
-      <div class="weekPct ${pctClass}">${sign}${r.pct.toFixed(2)}%</div>
-    `;
+      const pctClass = r.pct >= 0 ? "pos" : "neg";
+      const sign = r.pct >= 0 ? "+" : "";
 
-    item.addEventListener("click", () => {
-      // highlight active
-      activeWeekIndex = idx;
-      weekListEl.querySelectorAll(".weekItem").forEach(el => el.classList.remove("is-active"));
-      item.classList.add("is-active");
+      item.innerHTML = `
+        <div class="weekLeft">
+          <div class="weekDate">${fmtWeekDate(r.datetime)}</div>
+          <div class="weekClose">Close:<span class="weekCloseVal ${pctClass}"> ${r.close.toFixed(2)}</span></div>
+        </div>
+        <div class="weekPct ${pctClass}">${sign}${r.pct.toFixed(2)}%</div>
+      `;
 
-      // set base to that week close (no extra API calls)
-      baseEl.value = r.close.toFixed(2);
-      maybeAuto();
+      item.addEventListener("click", () => {
+        // highlight active
+        activeWeekIndex = idx;
+        weekListEl.querySelectorAll(".weekItem").forEach(el => el.classList.remove("is-active"));
+        item.classList.add("is-active");
 
-      statusEl.textContent = "Weekly close set";
-      setTimeout(() => { statusEl.textContent = "Ready"; }, 900);
+        // set base to that week close (no extra API calls)
+        baseEl.value = r.close.toFixed(2);
+        maybeAuto();
+
+        statusEl.textContent = "Weekly close set";
+        setTimeout(() => { statusEl.textContent = "Ready"; }, 900);
+      });
+      weekSubEl.textContent = `${symbol} • ${rows.length} weeks loaded`;
+      weekListEl.appendChild(item);
     });
-    weekSubEl.textContent = `${symbol} • ${rows.length} weeks loaded`;
-    weekListEl.appendChild(item);
-  });
+  }
+
+  function fmtWeekDate(isoDateStr){
+  // input like "2026-02-16"
+  const d = new Date(isoDateStr + "T00:00:00Z"); // force stable parsing
+  if (Number.isNaN(d.getTime())) return isoDateStr;
+
+  const day = d.getUTCDate();
+  const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  const yy  = String(d.getUTCFullYear()).slice(-2);
+  return `${day} ${mon} ${yy}`;
 }
+
+  function emKey(symbol){
+    return `emPts_${symbol || "CUSTOM"}`;
+  }
+
+  function loadExpectedMove(symbol){
+    const v = Number(localStorage.getItem(emKey(symbol)));
+    expectedMovePts = Number.isFinite(v) ? v : NaN;
+    emPtsEl.value = Number.isFinite(expectedMovePts) ? String(expectedMovePts) : "";
+  }
+
+  function saveExpectedMove(symbol, pts){
+    if (!symbol) return; // only persist when a symbol is active
+    localStorage.setItem(emKey(symbol), String(pts));
+  }
 
   function updateW1UI(){
     btnW1.textContent = usePriorWeekClose ? "1w: ON" : "1w: OFF";
@@ -373,6 +418,13 @@ function renderWeeklyList(symbol, rows){
   [baseEl, stepEl, maxEl, decEl].forEach(el => {
     el.addEventListener("input", maybeAuto);
     el.addEventListener("keydown", (e) => { if (e.key === "Enter") buildTable(); });
+  });
+
+  emPtsEl.addEventListener("input", () => {
+    const v = parseNum(emPtsEl.value);
+    expectedMovePts = v;
+    if (Number.isFinite(v) && activeSymbol) saveExpectedMove(activeSymbol, v);
+    buildTable(); // re-render highlights
   });
 
   // Init
