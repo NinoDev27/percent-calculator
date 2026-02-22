@@ -37,6 +37,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let expectedMovePts = NaN;
 
+    // --- Persist STEP (%) ---
+  const STEP_KEY = "rangecalc_step";
+
+  // restore on load
+  const savedStep = localStorage.getItem(STEP_KEY);
+  if (savedStep !== null && savedStep !== "") {
+    stepEl.value = savedStep;
+  }
+
+  // save on change (and keep your auto-calc behavior)
+  stepEl.addEventListener("input", () => {
+    localStorage.setItem(STEP_KEY, stepEl.value);
+  });
+
   const API_KEY = "03263123023e425fbe5ec22a54a12363";
   const etfButtons = [btnSPY, btnQQQ, btnIWM];
 
