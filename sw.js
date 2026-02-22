@@ -1,5 +1,5 @@
-const CACHE_NAME = "rangecalc-v7";
-const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
+const CACHE_NAME = "rangecalc-v8";
+const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)));
