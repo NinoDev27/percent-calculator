@@ -23,42 +23,49 @@
     <div class="card">
       <div class="section">
         <div class="grid">
-          <div class="field">
-            <label>Price</label>
-            <input id="base" class="input" inputmode="decimal" value="1000" />
-          </div>
+          <!-- LEFT -->
+          <div class="gridLeft">
+            <div class="field w-lg">
+              <label>Price</label>
+              <input id="base" class="input" inputmode="decimal" value="1000" />
+            </div>
 
-          <div id="chgWrap" class="chgWrap" aria-live="polite">
-            <div id="chgBadge" class="chgBadge is-hidden">
-              <span id="chgTf" class="chgTf">1W</span>
-              <span id="chgArrow" class="chgArrow">▲</span>
-              <span id="chgVal" class="chgVal">+0.00%</span>
+            <div class="field w-sm">
+              <label>Max (%)</label>
+              <input id="max" class="input" inputmode="decimal" value="5" />
             </div>
           </div>
 
-          <div class="field">
-            <label>Step (%)</label>
-            <input id="step" class="input" inputmode="decimal" value="0.5" />
-          </div>
+          <!-- RIGHT -->
+          <div class="gridRight">
+            <div id="chgWrap" class="chgWrap" aria-live="polite">
+              <div id="chgBadge" class="chgBadge is-hidden">
+                <span id="chgTf" class="chgTf">1D</span>
+                <span id="chgArrow" class="chgArrow">▲</span>
+                <span id="chgVal" class="chgVal">+0.00%</span>
+              </div>
+            </div>
 
-          <div class="field">
-            <label>Max (%)</label>
-            <input id="max" class="input" inputmode="decimal" value="5" />
+            <div class="field w-sm">
+              <label>Step (%)</label>
+              <input id="step" class="input" inputmode="decimal" value="0.5" />
+            </div>
           </div>
         </div>
 
         <div class="grid2">
-          <div class="field">
+          <div class="field w-sm">
             <label>Decimals</label>
             <input id="decimals" class="input" inputmode="numeric" value="2" />
           </div>
+
+          <div class="field w-md">
+            <label>ATM Straddle (pts)</label>
+            <input id="emPts" class="input" inputmode="decimal" placeholder="e.g. 12.5" />
+          </div>
         </div>
       </div>
-
-        <div class="field">
-          <label>ATM Straddle (pts)</label>
-          <input id="emPts" class="input" inputmode="decimal" placeholder="e.g. 12.5" />
-        </div>
+      </div>
 
       <div class="btnRow">
         <button class="chip primary" id="btnSPY" type="button">SPY</button>
