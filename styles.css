@@ -412,20 +412,56 @@ tbody tr.is-em td.colP::before{
 }
 
 /* ===== Responsive ===== */
-@media (max-width:720px){
-  .split{
-    grid-template-columns: 1fr;
-  }
-  .weekList{ max-height:260px; }
-}
+@media (max-width: 520px){
 
-@media (max-width:520px){
-  .section .grid{ grid-template-columns: 1fr; }
-  .gridLeft, .gridRight, .grid2{ grid-template-columns: 1fr; }
-  .chgWrap{ justify-content:flex-start; }
-  thead th{ padding:11px 12px; }
-  tbody td{ padding:12px 12px; font-size:15px; }
-  tbody tr.is-em td.colP::before{ left:-6px; }
+  /* uniform 2-column layout */
+  .grid,
+  .grid2{
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* remove gridLeft/gridRight structure */
+  .gridLeft,
+  .gridRight{
+    display: contents !important;
+  }
+
+  /* no field spans full width */
+  .grid .field,
+  .grid2 .field{
+    grid-column: auto !important;
+  }
+
+  /* make ALL fields same compact width */
+  .field{
+    max-width: none !important;
+  }
+
+  .input{
+    padding: 9px 12px;
+    font-size: 15px;
+  }
+
+  /* badge sits below grid, compact */
+  .chgWrap{
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    min-height: 0 !important;
+    margin-top: 6px;
+  }
+
+  /* buttons scroll horizontally */
+  .btnRow{
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+  }
+
+  .split{
+    grid-template-columns: 1fr !important;
+  }
 }
 
 .field .input{
