@@ -341,3 +341,28 @@ tbody td{
   th.colMinus, td.colMinus{width:33%;}
   th.colPlus, td.colPlus{width:33%;}
 }
+
+/* Remove previous row-level styling */
+tbody tr.is-em {
+  background: none !important;
+  outline: none;
+}
+
+/* Add stripe inside first cell */
+tbody tr.is-em td.colP {
+  position: relative;
+}
+
+tbody tr.is-em td.colP::before {
+  content: "";
+  position: absolute;
+  left: -12px;   /* adjust to align with table padding */
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 2px;
+  background: #2dff49;
+}
+
+.weekCloseVal.pos{ color: var(--green); font-weight: 750; }
+.weekCloseVal.neg{ color: var(--red);   font-weight: 750; }
