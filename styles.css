@@ -1,23 +1,34 @@
+/* styles.css — COMPLETE (clean, no duplicates, compact inputs, keeps your current look) */
+
 :root{
   --bg:#0b0f14;
   --panel:#121826;
   --panel-2:#0f1522;
+
   --border:rgba(255,255,255,.08);
   --border-2:rgba(255,255,255,.06);
+
   --text:rgba(255,255,255,.92);
   --muted:rgba(255,255,255,.60);
   --muted2:rgba(255,255,255,.45);
+
   --blue:#2d7dff;
   --green:#78c499;
   --red:#c27467;
+
   --rowA:rgba(255,255,255,.015);
   --rowB:rgba(255,255,255,.035);
   --rowHover:rgba(255,255,255,.06);
+
+  /* selection highlight */
   --rowActive:rgba(45,125,255,.14);
   --rowActiveBorder:rgba(45,125,255,.35);
+
+  /* expected move highlight stripe */
+  --emStripe:#2dff49;
 }
 
-*{box-sizing:border-box;}
+*{ box-sizing:border-box; }
 
 body{
   margin:0;
@@ -26,7 +37,7 @@ body{
   color:var(--text);
 }
 
-.wrap{max-width:760px;margin:18px auto;padding:0 14px 22px;}
+.wrap{ max-width:760px; margin:18px auto; padding:0 14px 22px; }
 
 .topbar{
   display:flex;
@@ -54,14 +65,55 @@ body{
   overflow:hidden;
 }
 
-.section{padding:14px;border-bottom:1px solid var(--border-2);}
+.section{
+  padding:14px;
+  border-bottom:1px solid var(--border-2);
+}
 
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.grid2{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
+/* ===== Inputs layout (compact, no huge bars) ===== */
+.section .grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr; /* left / right */
+  gap:20px;
+  align-items:end;
+}
+
+.gridLeft{
+  display:grid;
+  grid-template-columns: 1.4fr 0.8fr; /* Price + Max */
+  gap:18px;
+  align-items:end;
+}
+
+.gridRight{
+  display:grid;
+  grid-template-columns: auto 0.9fr; /* Badge + Step */
+  gap:18px;
+  align-items:end;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns: 0.6fr 1.4fr; /* Decimals + Straddle */
+  gap:18px;
+  margin-top:18px;
+  align-items:end;
+}
+
+/* width utilities (optional; keeps control if you reuse them elsewhere) */
+.field.w-xs{ max-width:120px; }
+.field.w-sm{ max-width:160px; }
+.field.w-md{ max-width:260px; }
+.field.w-lg{ max-width:420px; }
+.field.w-full{ max-width:none; }
 
 .field label{
-  font-size:11px;color:var(--muted2);letter-spacing:.06em;text-transform:uppercase;
-  display:block;margin:2px 2px 6px;
+  font-size:11px;
+  color:var(--muted2);
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  display:block;
+  margin:2px 2px 6px;
 }
 
 .input{
@@ -80,9 +132,13 @@ body{
   box-shadow:0 0 0 3px rgba(45,125,255,.14);
 }
 
+/* ===== Buttons ===== */
 .btnRow{
-  display:flex;gap:10px;flex-wrap:wrap;
-  padding:14px;border-bottom:1px solid var(--border-2);
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  padding:14px;
+  border-bottom:1px solid var(--border-2);
 }
 
 button{
@@ -96,9 +152,8 @@ button{
   cursor:pointer;
   user-select:none;
 }
-
-button:active{transform:translateY(1px);}
-button:disabled{opacity:.55;cursor:default;}
+button:active{ transform:translateY(1px); }
+button:disabled{ opacity:.55; cursor:default; }
 
 .primary{
   background:rgba(45,125,255,.16);
@@ -110,12 +165,12 @@ button:disabled{opacity:.55;cursor:default;}
   border-radius:999px;
   background:rgba(255,255,255,.04);
 }
-
 .chip.primary{
   background:rgba(45,125,255,.14);
   border-color:rgba(45,125,255,.28);
 }
 
+/* ===== Error ===== */
 .error{
   display:none;
   padding:12px 14px;
@@ -124,7 +179,7 @@ button:disabled{opacity:.55;cursor:default;}
   font-size:13px;
 }
 
-/* Webull-style change badge */
+/* ===== Webull-style change badge ===== */
 .chgWrap{
   display:flex;
   align-items:center;
@@ -180,62 +235,96 @@ button:disabled{opacity:.55;cursor:default;}
 .chgBadge.is-neg .chgArrow,
 .chgBadge.is-neg .chgVal{ color: var(--red); }
 
-/* TABLE */
+/* ===== Split layout: range table (left) + week panel (right) ===== */
+.split{
+  display:grid;
+  grid-template-columns: 1fr 360px;
+  gap:14px;
+  padding:14px;
+}
+
+.tablePanel{
+  border:1px solid transparent;
+}
+
+/* ===== Range table ===== */
 table{
-  width:auto;
-  margin:0 auto;
+  width:100%;
   border-collapse:collapse;
   font-variant-numeric:tabular-nums;
 }
 
 thead th{
-  position:sticky;top:0;z-index:2;
+  position:sticky;
+  top:0;
+  z-index:2;
   background:rgba(18,24,38,.96);
   border-bottom:1px solid var(--border-2);
   color:var(--muted);
   font-size:11px;
   letter-spacing:.08em;
   text-transform:uppercase;
-  padding:13px 25px;
+  padding:13px 18px;
   text-align:center;
 }
 
-th.colP, td.colP{ width:34%; text-align:center; }
-th.colMinus, td.colMinus{ width:33%; text-align:center; }
-th.colPlus, td.colPlus{ width:33%; text-align:center; }
+th.colP, td.colP{ width:26%; text-align:center; }
+th.colMinus, td.colMinus{ width:37%; text-align:center; }
+th.colPlus, td.colPlus{ width:37%; text-align:center; }
 
-tbody tr{cursor:pointer;transition:background .12s ease,opacity .12s ease;}
-tbody tr:nth-child(odd){background:var(--rowA);}
-tbody tr:nth-child(even){background:var(--rowB);}
-tbody tr:hover{background:var(--rowHover);}
+tbody tr{
+  cursor:pointer;
+  transition:background .12s ease, opacity .12s ease;
+}
+
+tbody tr:nth-child(odd){ background:var(--rowA); }
+tbody tr:nth-child(even){ background:var(--rowB); }
+tbody tr:hover{ background:var(--rowHover); }
 
 tbody tr.is-active{
   background:var(--rowActive)!important;
-  box-shadow:inset 3px 0 0 0 var(--rowActiveBorder);
+  box-shadow: inset 3px 0 0 0 var(--rowActiveBorder);
 }
 
-tbody.has-active tr:not(.is-active){opacity:.55;}
+tbody.has-active tr:not(.is-active){ opacity:.55; }
 
 tbody td{
-  padding:13px 25px;
+  padding:13px 18px;
   border-bottom:1px solid var(--border-2);
   font-size:16px;
   white-space:nowrap;
 }
 
-/* Split layout: Weekly panel (left) + table (right) */
-.split{
-  display:grid;
-  grid-template-columns: 320px 1fr;
-  gap:14px;
-  padding:14px;
+.pct{ font-weight:650; }
+.neg{ color:var(--red); font-weight:650; }
+.pos{ color:var(--green); font-weight:650; }
+
+/* Expected move highlight: subtle stripe (different from selection) */
+tbody tr.is-em{
+  background: none !important;
+  outline:none;
+}
+tbody tr.is-em td.colP{
+  position:relative;
+}
+tbody tr.is-em td.colP::before{
+  content:"";
+  position:absolute;
+  left:-10px;     /* aligns with cell padding */
+  top:7px;
+  bottom:7px;
+  width:3px;
+  border-radius:2px;
+  background:var(--emStripe);
 }
 
+/* ===== Week panel ===== */
 .weekPanel{
   border:1px solid var(--border-2);
   border-radius:14px;
   background:rgba(255,255,255,.02);
   overflow:hidden;
+  min-width:0;
 }
 
 .weekHeader{
@@ -264,7 +353,7 @@ tbody td{
 }
 
 .weekList{
-  max-height:520px;          /* adjust to taste */
+  max-height:520px;
   overflow:auto;
 }
 
@@ -305,6 +394,9 @@ tbody td{
   color:var(--muted2);
 }
 
+.weekCloseVal.pos{ color: var(--green); font-weight:750; }
+.weekCloseVal.neg{ color: var(--red); font-weight:750; }
+
 .weekPct{
   font-size:13px;
   font-weight:800;
@@ -314,11 +406,14 @@ tbody td{
 .weekPct.pos{ color: var(--green); }
 .weekPct.neg{ color: var(--red); }
 
-.tablePanel{
-  border:1px solid transparent; /* keeps alignment nice */
+/* ===== Hint ===== */
+.hint{
+  padding:12px 14px;
+  font-size:12px;
+  color:var(--muted2);
 }
 
-/* Mobile: stack panels */
+/* ===== Responsive ===== */
 @media (max-width:720px){
   .split{
     grid-template-columns: 1fr;
@@ -326,43 +421,19 @@ tbody td{
   .weekList{ max-height:260px; }
 }
 
-.pct{font-weight:650;}
-.neg{color:var(--red);font-weight:650;}
-.pos{color:var(--green);font-weight:650;}
-
-.hint{padding:12px 14px;font-size:12px;color:var(--muted2);}
-
 @media (max-width:520px){
-  .grid{grid-template-columns:1fr 1fr;}
-  .grid .field:nth-child(3){grid-column:1 / -1;}
-  tbody td{padding:12px 12px;font-size:15px;}
-  thead th{padding:11px 12px;}
-  th.colP, td.colP{width:34%;}
-  th.colMinus, td.colMinus{width:33%;}
-  th.colPlus, td.colPlus{width:33%;}
+  .section .grid{ grid-template-columns: 1fr; }
+  .gridLeft, .gridRight, .grid2{ grid-template-columns: 1fr; }
+  .chgWrap{ justify-content:flex-start; }
+  thead th{ padding:11px 12px; }
+  tbody td{ padding:12px 12px; font-size:15px; }
+  tbody tr.is-em td.colP::before{ left:-6px; }
 }
 
-/* Remove previous row-level styling */
-tbody tr.is-em {
-  background: none !important;
-  outline: none;
+.field .input{
+  background:rgba(255,255,255,.035);
 }
 
-/* Add stripe inside first cell */
-tbody tr.is-em td.colP {
-  position: relative;
+.section{
+  padding:18px;
 }
-
-tbody tr.is-em td.colP::before {
-  content: "";
-  position: absolute;
-  left: -12px;   /* adjust to align with table padding */
-  top: 6px;
-  bottom: 6px;
-  width: 3px;
-  border-radius: 2px;
-  background: #2dff49;
-}
-
-.weekCloseVal.pos{ color: var(--green); font-weight: 750; }
-.weekCloseVal.neg{ color: var(--red);   font-weight: 750; }
