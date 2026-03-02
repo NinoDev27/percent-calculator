@@ -30,6 +30,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const emPtsEl = document.getElementById("emPts");
 
+  // ===== Credit Spread refs (panel under 52w) =====
+  const csWidthEl = document.getElementById("csWidth");
+  const csCreditEl = document.getElementById("csCredit");
+  const csContractsEl = document.getElementById("csContracts");
+  const csMinusEl = document.getElementById("csMinus");
+  const csPlusEl = document.getElementById("csPlus");
+  const csMaxProfitEl = document.getElementById("csProfit");
+  const csMaxRiskEl = document.getElementById("csRisk");
+  const csROREl = document.getElementById("csRor");
+  const csTbodyEl = document.getElementById("csTbody");
+
+const CS_KEY = "rangecalc_cs";
+
   let autoCalc = true;
   let focusMode = true;
   let activeSymbol = null;
@@ -199,15 +212,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=5&apikey=${API_KEY}`;
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
-
     if (data.status === "error") throw new Error(data.message || "API error");
-
     const values = data.values;
     if (!Array.isArray(values) || values.length < 2) throw new Error("Not enough weekly data");
-
     const close = Number(values[1].close); // prior completed week close
     if (!Number.isFinite(close)) throw new Error("Bad close");
-
     return close;
   }
 
@@ -224,14 +233,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const key = `w1close_${symbol}`;
     const wk = isoWeekKey(new Date());
     const cached = localStorage.getItem(key);
-
     if (cached){
       try{
         const obj = JSON.parse(cached);
         if (obj && obj.weekKey === wk && Number.isFinite(obj.close)) return obj.close;
       }catch{}
     }
-
     const close = await fetchPriorWeekClose(symbol);
     localStorage.setItem(key, JSON.stringify({ weekKey: wk, close }));
     return close;
@@ -239,10 +246,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function setBaseFromSymbol(symbol, btn){
     const old = btn.textContent;
-
     btn.disabled = true;
     btn.textContent = symbol + "…";
-
     activeSymbol = symbol;
     setActiveEtfButton(btn);
     loadExpectedMove(symbol);
@@ -251,35 +256,26 @@ document.addEventListener("DOMContentLoaded", () => {
     getWeeklySeriesCached(symbol)
       .then(values => renderWeeklyList(symbol, buildWeeklyRows(values)))
       .catch(() => { weekSubEl.textContent = "Weekly data unavailable"; weekListEl.innerHTML = ""; });
-
     try{
       statusEl.textContent = "Fetching " + symbol;
-
       const q = await fetchQuote(symbol);
-
       let px;
       if (usePriorWeekClose){
         const w1 = await getPriorWeekCloseCached(symbol);
         px = w1;
-
         const pct = ((q.last / w1) - 1) * 100;
         setChangeBadge({ tf: "1W", pct });
       } else {
         px = q.last;
-
         const dayPct = Number.isFinite(q.dayPct)
           ? q.dayPct
           : (Number.isFinite(q.prevClose) ? ((q.last / q.prevClose) - 1) * 100 : NaN);
-
         setChangeBadge({ tf: "1D", pct: dayPct });
       }
-
       baseEl.value = px.toFixed(2);
       maybeAuto();
-
       statusEl.textContent = usePriorWeekClose ? `${symbol} Last week` : `${symbol} live price`;
       setTimeout(() => { statusEl.textContent = "Ready"; }, 1200);
-
     } catch (e){
       showError(`Could not fetch ${symbol} price (some previews block external fetch).`);
       statusEl.textContent = "Ready";
@@ -369,7 +365,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // input like "2026-02-16"
   const d = new Date(isoDateStr + "T00:00:00Z"); // force stable parsing
   if (Number.isNaN(d.getTime())) return isoDateStr;
-
   const day = d.getUTCDate();
   const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
   const yy  = String(d.getUTCFullYear()).slice(-2);
@@ -440,6 +435,134 @@ document.addEventListener("DOMContentLoaded", () => {
     if (Number.isFinite(v) && activeSymbol) saveExpectedMove(activeSymbol, v);
     buildTable(); // re-render highlights
   });
+
+// CSP CALCL
+  function snapTo25(n){
+    n = Math.round(Number(n) || 0);
+    if (n < 25) return 25;
+    return Math.round(n / 25) * 25;
+}
+
+function money0(n){
+  if (!Number.isFinite(n)) return "—";
+  return "$" + Math.round(n).toLocaleString("fr-FR");
+}
+
+function creditForROR(width, rorPct){
+  const W = Number(width);
+  const r = Number(rorPct) / 100;
+  if (!(W > 0) || !(r > 0)) return NaN;
+  return (r * W) / (1 + r);
+}
+
+function calcCS(width, credit, contracts){
+  const W = Number(width);
+  const C = Number(credit);
+  const N = Number(contracts);
+  const mult = 100;
+
+  if (!(W > 0) || !(C >= 0) || !(N > 0)) return null;
+  if (C >= W) return { error: true };
+
+  const maxProfit = C * mult * N;
+  const maxRisk = (W - C) * mult * N;
+  const rorPct = (maxProfit / maxRisk) * 100;
+
+  return { maxProfit, maxRisk, rorPct };
+}
+
+function saveCS(){
+  if (!csWidthEl) return;
+  localStorage.setItem(CS_KEY, JSON.stringify({
+    width: csWidthEl.value || "",
+    credit: csCreditEl.value || "",
+    contracts: csContractsEl.value || "100"
+  }));
+}
+
+function loadCS(){
+  try{
+    const raw = localStorage.getItem(CS_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (!s) return;
+    if (typeof s.width === "string") csWidthEl.value = s.width;
+    if (typeof s.credit === "string") csCreditEl.value = s.credit;
+    if (s.contracts != null) csContractsEl.value = String(s.contracts);
+  }catch{}
+}
+
+function renderCS(){
+  if (!csWidthEl) return;
+
+  const W = parseNum(csWidthEl.value);
+  const C = parseNum(csCreditEl.value);
+  const N = snapTo25(csContractsEl.value);
+  csContractsEl.value = String(N);
+
+  const res = calcCS(W, C, N);
+
+  if (!res || res.error){
+    csMaxProfitEl.textContent = "—";
+    csMaxRiskEl.textContent = "—";
+    csROREl.textContent = "—";
+  } else {
+    csMaxProfitEl.textContent = money0(res.maxProfit);
+    csMaxRiskEl.textContent = money0(res.maxRisk);
+    csROREl.textContent = `${res.rorPct.toFixed(2)}%`;
+  }
+
+  // Table 5% → 15% ROR
+  csTbodyEl.innerHTML = "";
+  if (!(W > 0)) return;
+
+  let bestRow = null;
+  let bestDiff = Infinity;
+
+  for (let p = 5; p <= 15; p++){
+    const cred = creditForROR(W, p);
+    if (!Number.isFinite(cred) || cred >= W) continue;
+
+    const row = calcCS(W, cred, N);
+    const tr = document.createElement("tr");
+    const diff = Math.abs(p - res?.rorPct);
+    if (Number.isFinite(diff) && diff < bestDiff){
+      bestDiff = diff;
+      bestRow = tr;
+    }
+    tr.innerHTML = `
+      <td>${p}%</td>
+      <td>${cred.toFixed(2)}</td>
+      <td>${money0(row.maxProfit)}</td>
+      <td>${money0(row.maxRisk)}</td>
+    `;
+    csTbodyEl.appendChild(tr);
+  }
+  if (bestRow) bestRow.classList.add("is-active");
+}
+
+// Buttons + inputs
+if (csMinusEl) csMinusEl.addEventListener("click", () => {
+  csContractsEl.value = String(Math.max(25, snapTo25(csContractsEl.value) - 25));
+  renderCS(); saveCS();
+});
+
+if (csPlusEl) csPlusEl.addEventListener("click", () => {
+  csContractsEl.value = String(snapTo25(csContractsEl.value) + 25);
+  renderCS(); saveCS();
+});
+
+[csWidthEl, csCreditEl, csContractsEl].forEach(el => {
+  if (!el) return;
+  el.addEventListener("input", () => { renderCS(); saveCS(); });
+  el.addEventListener("keydown", (e) => { if (e.key === "Enter") { renderCS(); saveCS(); }});
+});
+
+
+
+// init
+loadCS();
+renderCS();
 
   // Init
   buildTable();
