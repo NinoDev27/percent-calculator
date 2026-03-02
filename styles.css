@@ -574,3 +574,31 @@ tbody tr.is-em td.colP::before{
 }
 #csProfit{ color:#59d39b; }
 #csRisk{ color:#ff7c7c; }
+
+.cards4{
+  display:grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr;
+  gap:14px;
+}
+
+.miniInput{
+  width:100%;
+  margin-top:8px;
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.08);
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 12px;
+  outline: none;
+  font-size: 18px;
+}
+
+.miniHint{
+  margin-top:6px;
+  font-size: 12px;
+  opacity: .7;
+}
+
+.good { color: #7CFFB2; }   /* or reuse your existing green */
+.bad  { color: #FF6B6B; }   /* or reuse your existing red */
+.neutral { opacity: .9; }
