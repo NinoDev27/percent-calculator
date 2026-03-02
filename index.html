@@ -65,46 +65,105 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="btnRow">
+      <button class="chip primary" id="btnSPY" type="button">SPY</button>
+      <button class="chip" id="btnQQQ" type="button">QQQ</button>
+      <button class="chip" id="btnIWM" type="button">IWM</button>
+
+      <button class="primary" id="calc" type="button">Calculate</button>
+      <button id="btnW1" type="button">W-1: OFF</button>
+      <button id="auto" type="button">Auto: ON</button>
+      <button id="focus" type="button">Focus: ON</button>
+      <button id="clear" type="button">Clear</button>
+    </div>
+
+    <div id="err" class="error"></div>
+
+    <div class="split">
+      <div class="tablePanel">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th class="colP">%</th>
+              <th class="colMinus">-</th>
+              <th class="colPlus">+</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
       </div>
-
-      <div class="btnRow">
-        <button class="chip primary" id="btnSPY" type="button">SPY</button>
-        <button class="chip" id="btnQQQ" type="button">QQQ</button>
-        <button class="chip" id="btnIWM" type="button">IWM</button>
-
-        <button class="primary" id="calc" type="button">Calculate</button>
-        <button id="btnW1" type="button">W-1: OFF</button>
-        <button id="auto" type="button">Auto: ON</button>
-        <button id="focus" type="button">Focus: ON</button>
-        <button id="clear" type="button">Clear</button>
-      </div>
-
-      <div id="err" class="error"></div>
-
-      <div class="split">
-        <div class="tablePanel">
-          <table id="tbl">
-            <thead>
-              <tr>
-                <th class="colP">%</th>
-                <th class="colMinus">-</th>
-                <th class="colPlus">+</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
+      <div class="weekPanel">
+        <div class="weekHeader">
+          <div class="weekTitle">(52w)</div>
+          <div class="weekSub" id="weekSub">Select an ETF</div>
         </div>
-        <div class="weekPanel">
-          <div class="weekHeader">
-            <div class="weekTitle">(52w)</div>
-            <div class="weekSub" id="weekSub">Select an ETF</div>
+        <div class="weekList" id="weekList"></div>
+      </div>
+    </div>
+
+    <!-- NEW: full-width credit spread panel -->
+    <div class="csSection">
+      <div class="csHeader">
+        <div class="csTitle">Credit Spread</div>
+        <div class="csSub">Width / Credit / Contracts</div>
+      </div>
+
+      <div class="csGrid">
+        <div class="field">
+          <label>Width ($)</label>
+          <input id="csWidth" class="input" inputmode="decimal" value="20" />
+        </div>
+
+        <div class="field">
+          <label>Credit ($)</label>
+          <input id="csCredit" class="input" inputmode="decimal" value="1" />
+        </div>
+
+        <div class="field csContracts">
+          <label>Contracts</label>
+          <div class="csQty">
+            <button id="csMinus" type="button">-25</button>
+            <input id="csContracts" class="input" inputmode="numeric" value="100" />
+            <button id="csPlus" type="button">+25</button>
           </div>
-          <div class="weekList" id="weekList"></div>
         </div>
       </div>
-      <div class="hint">Tap a row to lock highlight. Use SPY/QQQ/IWM buttons to auto-fill base.</div>
-  </div>
 
+      <div class="csOut">
+        <div class="csBox">
+          <div class="csLbl">Max Profit</div>
+          <div class="csVal" id="csProfit">$0</div>
+        </div>
+        <div class="csBox">
+          <div class="csLbl">Max Risk</div>
+          <div class="csVal" id="csRisk">$0</div>
+        </div>
+        <div class="csBox">
+          <div class="csLbl">ROR</div>
+          <div class="csVal" id="csRor">0%</div>
+        </div>
+      </div>
+
+      <div class="csTblWrap">
+        <table class="csTbl">
+          <thead>
+            <tr>
+              <th>ROR%</th>
+              <th>Credit</th>
+              <th>Profit</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody id="csTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="hint">Tap a row to lock highlight. Use SPY/QQQ/IWM buttons to auto-fill base.</div>
+  </div>
+  
   <script src="./app.js" defer></script>
 </body>
 </html>
