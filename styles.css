@@ -1,3 +1,5 @@
+/* styles.css — COMPLETE (clean, no duplicates, compact inputs, keeps your current look) */
+
 :root{
   --bg:#0b0f14;
   --panel:#121826;
@@ -412,56 +414,20 @@ tbody tr.is-em td.colP::before{
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 520px){
-
-  /* uniform 2-column layout */
-  .grid,
-  .grid2{
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
-  }
-
-  /* remove gridLeft/gridRight structure */
-  .gridLeft,
-  .gridRight{
-    display: contents !important;
-  }
-
-  /* no field spans full width */
-  .grid .field,
-  .grid2 .field{
-    grid-column: auto !important;
-  }
-
-  /* make ALL fields same compact width */
-  .field{
-    max-width: none !important;
-  }
-
-  .input{
-    padding: 9px 12px;
-    font-size: 15px;
-  }
-
-  /* badge sits below grid, compact */
-  .chgWrap{
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    min-height: 0 !important;
-    margin-top: 6px;
-  }
-
-  /* buttons scroll horizontally */
-  .btnRow{
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    gap: 8px;
-  }
-
+@media (max-width:720px){
   .split{
-    grid-template-columns: 1fr !important;
+    grid-template-columns: 1fr;
   }
+  .weekList{ max-height:260px; }
+}
+
+@media (max-width:520px){
+  .section .grid{ grid-template-columns: 1fr; }
+  .gridLeft, .gridRight, .grid2{ grid-template-columns: 1fr; }
+  .chgWrap{ justify-content:flex-start; }
+  thead th{ padding:11px 12px; }
+  tbody td{ padding:12px 12px; font-size:15px; }
+  tbody tr.is-em td.colP::before{ left:-6px; }
 }
 
 .field .input{
@@ -471,3 +437,140 @@ tbody tr.is-em td.colP::before{
 .section{
   padding:18px;
 }
+
+/* ===== Credit Spread panel inside weekPanel ===== */
+
+.csSection{
+  margin:0 14px 18px;
+  padding:16px;
+  max-width:1100px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.csPanel{
+  border-top:1px solid var(--border-2);
+  padding:12px;
+  background:rgba(255,255,255,.01);
+}
+
+.csHeader{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:10px;
+  margin-bottom:10px;
+}
+.csTitle{
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:900;
+}
+.csSub{
+  font-size:11px;
+  color:var(--muted2);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* Inputs: 2 columns, contracts spans */
+.csGrid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px 10px;
+  align-items:end;
+  margin-bottom:10px;
+}
+.csGrid .field:nth-child(3){ grid-column:1 / -1; }
+
+/* Contracts row: compact pill group */
+.csQty{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.csQty button{
+  min-width:54px;
+  padding:10px 10px;
+  border-radius:12px;
+}
+.csQty .input{
+  width:92px;
+  text-align:center;
+  padding:10px 10px;
+}
+
+/* KPI row: tighter + aligned */
+.csOut{
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+  margin-bottom:10px;
+}
+.csBox{
+  border:1px solid var(--border-2);
+  border-radius:14px;
+  background:rgba(255,255,255,.02);
+  padding:9px 10px;
+}
+.csLbl{
+  font-size:10px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted2);
+  margin-bottom:6px;
+}
+.csVal{
+  font-size:14px;
+  font-weight:850;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Table: denser */
+.csTblWrap{
+  border:1px solid var(--border-2);
+  border-radius:14px;
+  overflow:hidden;
+}
+.csTbl{
+  width:100%;
+  border-collapse:collapse;
+  font-variant-numeric: tabular-nums;
+}
+.csTbl th{
+  background:rgba(18,24,38,.65);
+  border-bottom:1px solid var(--border-2);
+  color:var(--muted);
+  font-size:10px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:9px 8px;
+  text-align:center;
+}
+.csTbl td{
+  border-bottom:1px solid var(--border-2);
+  padding:9px 8px;
+  text-align:center;
+  white-space:nowrap;
+  font-size:13px;
+}
+.csTbl tr:last-child td{ border-bottom:none; }
+
+.csTbl tr.is-active{
+  background:rgba(0,140,255,.08);
+  border-left:3px solid #2b8cff;
+}
+
+/* Mobile */
+@media (max-width:720px){
+  .csOut{ grid-template-columns: 1fr; }
+  .csQty .input{ width:110px; }
+}
+.csVal{
+  font-variant-numeric: tabular-nums;
+}
+#csProfit{ color:#59d39b; }
+#csRisk{ color:#ff7c7c; }
