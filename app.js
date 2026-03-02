@@ -41,7 +41,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const csROREl = document.getElementById("csRor");
   const csTbodyEl = document.getElementById("csTbody");
 
-const CS_KEY = "rangecalc_cs";
+  const CS_KEY = "rangecalc_cs";
+
+  // ===== Risk Tracker refs (NEW) =====
+  const riskBudgetEl    = document.getElementById("riskBudget");
+  const totMaxProfitEl  = document.getElementById("totMaxProfit");
+  const totMaxRiskEl    = document.getElementById("totMaxRisk");
+  const riskRemainingEl = document.getElementById("riskRemaining");
+  const riskUsedPctEl   = document.getElementById("riskUsedPct");
+  const btnAddPos       = document.getElementById("btnAddPos");
+  const btnClearPos     = document.getElementById("btnClearPos");
+  const posTbodyEl      = document.getElementById("posTbody");
+  const portfolioRorEl = document.getElementById("portfolioRor");
 
   let autoCalc = true;
   let focusMode = true;
@@ -50,7 +61,7 @@ const CS_KEY = "rangecalc_cs";
 
   let expectedMovePts = NaN;
 
-    // --- Persist STEP (%) ---
+  // --- Persist STEP (%) ---
   const STEP_KEY = "rangecalc_step";
 
   // restore on load
@@ -112,7 +123,6 @@ const CS_KEY = "rangecalc_cs";
       ? (expectedMovePts / base) * 100
       : NaN;
 
-
     if (!Number.isFinite(base)) return showError("Enter a valid base value (e.g., 685).");
     if (!Number.isFinite(step) || step <= 0) return showError("Step must be a positive number (e.g., 0.5).");
     if (!Number.isFinite(max)  || max  <= 0) return showError("Max (%) must be a positive number (e.g., 5).");
@@ -136,7 +146,7 @@ const CS_KEY = "rangecalc_cs";
         .replace(/\.0+$/,"")
         .replace(/(\.\d)0$/,"$1");
 
-            if (Number.isFinite(emPct)) {
+      if (Number.isFinite(emPct)) {
         const diff = Math.abs(p - emPct);
         if (diff < bestDiff) {
           bestDiff = diff;
@@ -251,11 +261,12 @@ const CS_KEY = "rangecalc_cs";
     activeSymbol = symbol;
     setActiveEtfButton(btn);
     loadExpectedMove(symbol);
-    // weekly panel (cached; 1 call/week per symbol)
+
     weekSubEl.textContent = `Loading ${symbol}…`;
     getWeeklySeriesCached(symbol)
       .then(values => renderWeeklyList(symbol, buildWeeklyRows(values)))
       .catch(() => { weekSubEl.textContent = "Weekly data unavailable"; weekListEl.innerHTML = ""; });
+
     try{
       statusEl.textContent = "Fetching " + symbol;
       const q = await fetchQuote(symbol);
@@ -286,12 +297,12 @@ const CS_KEY = "rangecalc_cs";
   }
 
   async function fetchWeeklySeries(symbol){
-  const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=60&apikey=${API_KEY}`;
-  const res = await fetch(url, { cache: "no-store" });
-  const data = await res.json();
-  if (data.status === "error") throw new Error(data.message || "API error");
-  if (!Array.isArray(data.values) || data.values.length < 2) throw new Error("Not enough weekly data");
-  return data.values; // newest-first
+    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=60&apikey=${API_KEY}`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json();
+    if (data.status === "error") throw new Error(data.message || "API error");
+    if (!Array.isArray(data.values) || data.values.length < 2) throw new Error("Not enough weekly data");
+    return data.values; // newest-first
   }
 
   async function getWeeklySeriesCached(symbol){
@@ -344,32 +355,30 @@ const CS_KEY = "rangecalc_cs";
       `;
 
       item.addEventListener("click", () => {
-        // highlight active
         activeWeekIndex = idx;
         weekListEl.querySelectorAll(".weekItem").forEach(el => el.classList.remove("is-active"));
         item.classList.add("is-active");
 
-        // set base to that week close (no extra API calls)
         baseEl.value = r.close.toFixed(2);
         maybeAuto();
 
         statusEl.textContent = "Weekly close set";
         setTimeout(() => { statusEl.textContent = "Ready"; }, 900);
       });
+
       weekSubEl.textContent = `${symbol} • ${rows.length} weeks loaded`;
       weekListEl.appendChild(item);
     });
   }
 
   function fmtWeekDate(isoDateStr){
-  // input like "2026-02-16"
-  const d = new Date(isoDateStr + "T00:00:00Z"); // force stable parsing
-  if (Number.isNaN(d.getTime())) return isoDateStr;
-  const day = d.getUTCDate();
-  const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
-  const yy  = String(d.getUTCFullYear()).slice(-2);
-  return `${day} ${mon} ${yy}`;
-}
+    const d = new Date(isoDateStr + "T00:00:00Z");
+    if (Number.isNaN(d.getTime())) return isoDateStr;
+    const day = d.getUTCDate();
+    const mon = d.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+    const yy  = String(d.getUTCFullYear()).slice(-2);
+    return `${day} ${mon} ${yy}`;
+  }
 
   function emKey(symbol){
     return `emPts_${symbol || "CUSTOM"}`;
@@ -382,7 +391,7 @@ const CS_KEY = "rangecalc_cs";
   }
 
   function saveExpectedMove(symbol, pts){
-    if (!symbol) return; // only persist when a symbol is active
+    if (!symbol) return;
     localStorage.setItem(emKey(symbol), String(pts));
   }
 
@@ -433,136 +442,353 @@ const CS_KEY = "rangecalc_cs";
     const v = parseNum(emPtsEl.value);
     expectedMovePts = v;
     if (Number.isFinite(v) && activeSymbol) saveExpectedMove(activeSymbol, v);
-    buildTable(); // re-render highlights
+    buildTable();
   });
 
-// CSP CALCL
+  // CSP CALCL
   function snapTo25(n){
     n = Math.round(Number(n) || 0);
     if (n < 25) return 25;
     return Math.round(n / 25) * 25;
-}
-
-function money0(n){
-  if (!Number.isFinite(n)) return "—";
-  return "$" + Math.round(n).toLocaleString("fr-FR");
-}
-
-function creditForROR(width, rorPct){
-  const W = Number(width);
-  const r = Number(rorPct) / 100;
-  if (!(W > 0) || !(r > 0)) return NaN;
-  return (r * W) / (1 + r);
-}
-
-function calcCS(width, credit, contracts){
-  const W = Number(width);
-  const C = Number(credit);
-  const N = Number(contracts);
-  const mult = 100;
-
-  if (!(W > 0) || !(C >= 0) || !(N > 0)) return null;
-  if (C >= W) return { error: true };
-
-  const maxProfit = C * mult * N;
-  const maxRisk = (W - C) * mult * N;
-  const rorPct = (maxProfit / maxRisk) * 100;
-
-  return { maxProfit, maxRisk, rorPct };
-}
-
-function saveCS(){
-  if (!csWidthEl) return;
-  localStorage.setItem(CS_KEY, JSON.stringify({
-    width: csWidthEl.value || "",
-    credit: csCreditEl.value || "",
-    contracts: csContractsEl.value || "100"
-  }));
-}
-
-function loadCS(){
-  try{
-    const raw = localStorage.getItem(CS_KEY);
-    if (!raw) return;
-    const s = JSON.parse(raw);
-    if (!s) return;
-    if (typeof s.width === "string") csWidthEl.value = s.width;
-    if (typeof s.credit === "string") csCreditEl.value = s.credit;
-    if (s.contracts != null) csContractsEl.value = String(s.contracts);
-  }catch{}
-}
-
-function renderCS(){
-  if (!csWidthEl) return;
-
-  const W = parseNum(csWidthEl.value);
-  const C = parseNum(csCreditEl.value);
-  const N = snapTo25(csContractsEl.value);
-  csContractsEl.value = String(N);
-
-  const res = calcCS(W, C, N);
-
-  if (!res || res.error){
-    csMaxProfitEl.textContent = "—";
-    csMaxRiskEl.textContent = "—";
-    csROREl.textContent = "—";
-  } else {
-    csMaxProfitEl.textContent = money0(res.maxProfit);
-    csMaxRiskEl.textContent = money0(res.maxRisk);
-    csROREl.textContent = `${res.rorPct.toFixed(2)}%`;
   }
 
-  // Table 5% → 15% ROR
-  csTbodyEl.innerHTML = "";
-  if (!(W > 0)) return;
+  function money0(n){
+    if (!Number.isFinite(n)) return "—";
+    return "$" + Math.round(n).toLocaleString("fr-FR");
+  }
 
-  let bestRow = null;
-  let bestDiff = Infinity;
+  function creditForROR(width, rorPct){
+    const W = Number(width);
+    const r = Number(rorPct) / 100;
+    if (!(W > 0) || !(r > 0)) return NaN;
+    return (r * W) / (1 + r);
+  }
 
-  for (let p = 5; p <= 15; p++){
-    const cred = creditForROR(W, p);
-    if (!Number.isFinite(cred) || cred >= W) continue;
+  function calcCS(width, credit, contracts){
+    const W = Number(width);
+    const C = Number(credit);
+    const N = Number(contracts);
+    const mult = 100;
 
-    const row = calcCS(W, cred, N);
-    const tr = document.createElement("tr");
-    const diff = Math.abs(p - res?.rorPct);
-    if (Number.isFinite(diff) && diff < bestDiff){
-      bestDiff = diff;
-      bestRow = tr;
+    if (!(W > 0) || !(C >= 0) || !(N > 0)) return null;
+    if (C >= W) return { error: true };
+
+    const maxProfit = C * mult * N;
+    const maxRisk = (W - C) * mult * N;
+    const rorPct = (maxProfit / maxRisk) * 100;
+
+    return { maxProfit, maxRisk, rorPct };
+  }
+
+  function saveCS(){
+    if (!csWidthEl) return;
+    localStorage.setItem(CS_KEY, JSON.stringify({
+      width: csWidthEl.value || "",
+      credit: csCreditEl.value || "",
+      contracts: csContractsEl.value || "100"
+    }));
+  }
+
+  function loadCS(){
+    try{
+      const raw = localStorage.getItem(CS_KEY);
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (!s) return;
+      if (typeof s.width === "string") csWidthEl.value = s.width;
+      if (typeof s.credit === "string") csCreditEl.value = s.credit;
+      if (s.contracts != null) csContractsEl.value = String(s.contracts);
+    }catch{}
+  }
+
+  function renderCS(){
+    if (!csWidthEl) return;
+
+    const W = parseNum(csWidthEl.value);
+    const C = parseNum(csCreditEl.value);
+    const N = snapTo25(csContractsEl.value);
+    csContractsEl.value = String(N);
+
+    const res = calcCS(W, C, N);
+
+    if (!res || res.error){
+      csMaxProfitEl.textContent = "—";
+      csMaxRiskEl.textContent = "—";
+      csROREl.textContent = "—";
+    } else {
+      csMaxProfitEl.textContent = money0(res.maxProfit);
+      csMaxRiskEl.textContent = money0(res.maxRisk);
+      csROREl.textContent = `${res.rorPct.toFixed(2)}%`;
     }
-    tr.innerHTML = `
-      <td>${p}%</td>
-      <td>${cred.toFixed(2)}</td>
-      <td>${money0(row.maxProfit)}</td>
-      <td>${money0(row.maxRisk)}</td>
-    `;
-    csTbodyEl.appendChild(tr);
+
+    csTbodyEl.innerHTML = "";
+    if (!(W > 0)) return;
+
+    let bestRow = null;
+    let bestDiff = Infinity;
+
+    for (let p = 5; p <= 15; p++){
+      const cred = creditForROR(W, p);
+      if (!Number.isFinite(cred) || cred >= W) continue;
+
+      const row = calcCS(W, cred, N);
+      const tr = document.createElement("tr");
+      const diff = Math.abs(p - res?.rorPct);
+      if (Number.isFinite(diff) && diff < bestDiff){
+        bestDiff = diff;
+        bestRow = tr;
+      }
+      tr.innerHTML = `
+        <td>${p}%</td>
+        <td>${cred.toFixed(2)}</td>
+        <td>${money0(row.maxProfit)}</td>
+        <td>${money0(row.maxRisk)}</td>
+      `;
+      csTbodyEl.appendChild(tr);
+    }
+    if (bestRow) bestRow.classList.add("is-active");
   }
-  if (bestRow) bestRow.classList.add("is-active");
-}
 
-// Buttons + inputs
-if (csMinusEl) csMinusEl.addEventListener("click", () => {
-  csContractsEl.value = String(Math.max(25, snapTo25(csContractsEl.value) - 25));
-  renderCS(); saveCS();
-});
+  // Buttons + inputs
+  if (csMinusEl) csMinusEl.addEventListener("click", () => {
+    csContractsEl.value = String(Math.max(25, snapTo25(csContractsEl.value) - 25));
+    renderCS(); saveCS();
+  });
 
-if (csPlusEl) csPlusEl.addEventListener("click", () => {
-  csContractsEl.value = String(snapTo25(csContractsEl.value) + 25);
-  renderCS(); saveCS();
-});
+  if (csPlusEl) csPlusEl.addEventListener("click", () => {
+    csContractsEl.value = String(snapTo25(csContractsEl.value) + 25);
+    renderCS(); saveCS();
+  });
 
-[csWidthEl, csCreditEl, csContractsEl].forEach(el => {
-  if (!el) return;
-  el.addEventListener("input", () => { renderCS(); saveCS(); });
-  el.addEventListener("keydown", (e) => { if (e.key === "Enter") { renderCS(); saveCS(); }});
-});
+  [csWidthEl, csCreditEl, csContractsEl].forEach(el => {
+    if (!el) return;
+    el.addEventListener("input", () => { renderCS(); saveCS(); });
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") { renderCS(); saveCS(); }});
+  });
 
+  // ===== RISK TRACKER (FULLY WORKING) =====
+  const RT_POS_KEY = "rangecalc_positions";
+  const RT_BUDGET_KEY = "rangecalc_riskBudget";
+  let positions = [];
 
+  function parseMoney(v){
+    if (v == null) return 0;
+    const s = String(v).trim().replace(/\s/g, "").replace(",", ".");
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+  function fmtIntSpaces(n){
+    const sign = n < 0 ? "-" : "";
+    const x = Math.round(Math.abs(n));
+    return sign + x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  }
+  function fmtMoney(n){
+    if (!Number.isFinite(n)) return "—";
+    return "$" + fmtIntSpaces(n);
+  }
 
-// init
-loadCS();
-renderCS();
+  function loadRiskTracker(){
+    if (riskBudgetEl){
+      const b = localStorage.getItem(RT_BUDGET_KEY);
+      if (b != null) riskBudgetEl.value = b;
+    }
+    try{
+      const raw = localStorage.getItem(RT_POS_KEY);
+      positions = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(positions)) positions = [];
+    }catch{
+      positions = [];
+    }
+  }
+
+  function saveRiskTracker(){
+    localStorage.setItem(RT_POS_KEY, JSON.stringify(positions));
+    if (riskBudgetEl) localStorage.setItem(RT_BUDGET_KEY, riskBudgetEl.value || "");
+  }
+
+  function calcRow(p){
+    const contracts = parseMoney(p.contracts);
+    const width     = parseMoney(p.width);
+    const credit    = parseMoney(p.credit);
+
+    const maxProfit = credit * 100 * contracts;
+    const maxRisk   = (width * 100 * contracts) - maxProfit;
+    return { maxProfit, maxRisk };
+  }
+
+  function recalcTotals(){
+    let totalProfit = 0;
+    let totalRisk = 0;
+
+    for (const p of positions){
+      const r = calcRow(p);
+      totalProfit += r.maxProfit;
+      totalRisk   += r.maxRisk;
+    }
+
+    if (totMaxProfitEl) totMaxProfitEl.textContent = fmtMoney(totalProfit);
+    if (totMaxRiskEl)   totMaxRiskEl.textContent   = fmtMoney(totalRisk);
+
+    if (portfolioRorEl){
+      if (totalRisk > 0 && Number.isFinite(totalProfit)) {
+        const ror = (totalProfit / totalRisk) * 100;
+        portfolioRorEl.textContent = `${ror.toFixed(2)}% ROR`;
+      } else {
+        portfolioRorEl.textContent = "";
+      }
+    }
+
+    const budget = riskBudgetEl ? parseMoney(riskBudgetEl.value) : 0;
+
+    if (riskRemainingEl && riskUsedPctEl){
+      if (budget > 0){
+        const remaining = budget - totalRisk;
+        riskRemainingEl.textContent = fmtMoney(remaining);
+
+        const usedPct = (totalRisk / budget) * 100;
+        riskUsedPctEl.textContent = `${usedPct.toFixed(1)}% used`;
+
+        riskRemainingEl.classList.remove("good","bad","neutral");
+        if (remaining > 0) riskRemainingEl.classList.add("good");
+        else if (remaining < 0) riskRemainingEl.classList.add("bad");
+        else riskRemainingEl.classList.add("neutral");
+      } else {
+        riskRemainingEl.textContent = "$0";
+        riskUsedPctEl.textContent = "Set a budget";
+        riskRemainingEl.classList.remove("good","bad");
+        riskRemainingEl.classList.add("neutral");
+      }
+    }
+  }
+
+  function wireRowInputs(){
+    if (!posTbodyEl) return;
+
+    posTbodyEl.querySelectorAll("input[data-i][data-k]").forEach(el => {
+      el.addEventListener("input", () => {
+        const i = Number(el.getAttribute("data-i"));
+        const k = el.getAttribute("data-k");
+        if (!Number.isInteger(i) || !positions[i]) return;
+
+        positions[i][k] = el.value;
+
+        // keep totals live while typing (no re-render)
+        saveRiskTracker();
+        recalcTotals();
+      });
+
+      // refresh computed columns only when the user leaves the field
+      el.addEventListener("blur", () => {
+        renderPositions();
+        recalcTotals();
+      });
+
+      // optional: Enter key commits + refreshes
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          renderPositions();
+          recalcTotals();
+        }
+      });
+    });
+
+    posTbodyEl.querySelectorAll("button[data-del-i]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-del-i"));
+        if (!Number.isInteger(i)) return;
+        positions.splice(i, 1);
+        saveRiskTracker();
+        renderPositions();
+        recalcTotals();
+      });
+    });
+  }
+
+  function renderPositions(){
+    if (!posTbodyEl) return;
+
+    posTbodyEl.innerHTML = "";
+
+    positions.forEach((p, idx) => {
+      const { maxProfit, maxRisk } = calcRow(p);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><input class="cellInput" data-i="${idx}" data-k="ticker" value="${p.ticker || ""}" placeholder="SPY"></td>
+
+        <td>
+          <select class="cellSelect" data-i="${idx}" data-k="type">
+            <option ${p.type==="Put Credit"?"selected":""}>Put Credit</option>
+            <option ${p.type==="Call Credit"?"selected":""}>Call Credit</option>
+            <option ${p.type==="Iron Condor"?"selected":""}>Iron Condor</option>
+            <option ${p.type==="Debit Spread"?"selected":""}>Debit Spread</option>
+          </select>
+        </td>
+
+        <td><input class="cellInput" data-i="${idx}" data-k="expiry" value="${p.expiry || ""}" placeholder="YYYY-MM-DD"></td>
+
+        <td style="text-align:right;"><input class="cellInput num" data-i="${idx}" data-k="contracts" value="${p.contracts ?? ""}" placeholder="1"></td>
+
+        <td style="text-align:right;"><input class="cellInput num" data-i="${idx}" data-k="width" value="${p.width ?? ""}" placeholder="10"></td>
+
+        <td style="text-align:right;"><input class="cellInput num" data-i="${idx}" data-k="credit" value="${p.credit ?? ""}" placeholder="1.25"></td>
+
+        <td style="text-align:right;" class="green">${fmtMoney(maxProfit)}</td>
+        <td style="text-align:right;" class="red">${fmtMoney(maxRisk)}</td>
+
+        <td style="text-align:center;"><button class="btn btnGhost" data-del-i="${idx}">✕</button></td>
+      `;
+      posTbodyEl.appendChild(tr);
+    });
+
+    wireRowInputs();
+  }
+
+  function addPosition(){
+    // Prefill from your Credit Spread section (width/credit/contracts) if present
+    positions.push({
+      ticker: activeSymbol || "SPY",
+      expiry: "",
+      contracts: csContractsEl ? csContractsEl.value : "",
+      width: csWidthEl ? csWidthEl.value : "",
+      credit: csCreditEl ? csCreditEl.value : ""
+    });
+    saveRiskTracker();
+    renderPositions();
+    recalcTotals();
+  }
+
+  function clearPositions(){
+    positions = [];
+    saveRiskTracker();
+    renderPositions();
+    recalcTotals();
+  }
+
+  if (btnAddPos) btnAddPos.addEventListener("click", addPosition);
+  if (btnClearPos) btnClearPos.addEventListener("click", clearPositions);
+
+  if (riskBudgetEl){
+    riskBudgetEl.addEventListener("input", () => {
+      saveRiskTracker();
+      recalcTotals();
+    });
+    riskBudgetEl.addEventListener("blur", () => {
+      const v = parseMoney(riskBudgetEl.value);
+      if (v > 0) riskBudgetEl.value = fmtIntSpaces(v);
+      saveRiskTracker();
+      recalcTotals();
+    });
+  }
+
+  // init
+  loadCS();
+  renderCS();
+
+  // init risk tracker (only works if the HTML section exists)
+  loadRiskTracker();
+  renderPositions();
+  recalcTotals();
 
   // Init
   buildTable();
