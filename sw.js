@@ -10,8 +10,9 @@ const ASSETS = [
   BASE + "styles.css",
   BASE + "app.js",
   BASE + "manifest.webmanifest",
-  BASE + "icon-192.png",
-  BASE + "icon-512.png",
+  // icons that actually exist in /icons
+  BASE + "icons/android-launchericon-192-192.png",
+  BASE + "icons/android-launchericon-512-512.png",
 ];
 
 self.addEventListener("install", (e) => {
