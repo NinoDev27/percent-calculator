@@ -161,6 +161,73 @@
       </div>
     </div>
 
+      <!-- =========================
+          RISK TRACKER (Option A)
+          Place this directly BELOW your existing CREDIT SPREAD section
+      ========================== -->
+      <section class="panel" id="riskTracker">
+        <div class="panelHeader">
+          <div>
+            <div class="kicker">RISK TRACKER</div>
+          </div>
+          <div class="panelActions">
+            <button class="btn" id="btnAddPos">+ Add position</button>
+            <button class="btn btnGhost" id="btnClearPos">Clear</button>
+          </div>
+        </div>
+
+        <!-- Budget + totals row -->
+        <div class="cards4">
+          <div class="miniCard">
+            <div class="miniLabel">Risk budget</div>
+            <input class="miniInput" id="riskBudget" inputmode="numeric" placeholder="25 000" />
+          </div>
+
+          <div class="miniCard">
+            <div class="miniLabel">Max risk used</div>
+            <div class="miniValue red" id="totMaxRisk">$0</div>
+          </div>
+
+          <div class="miniCard">
+            <div class="miniLabel">Risk left</div>
+            <div class="miniValue neutral" id="riskRemaining">$0</div>
+            <div class="miniHint" id="riskUsedPct">Set a budget</div>
+          </div>
+
+          <div class="miniCard">
+            <div class="miniLabel">TOTAL MAX PROFIT</div>
+            <div class="miniValue green" id="totMaxProfit">$0</div>
+            <div class="miniHint" id="portfolioRor"></div>
+          </div>
+        </div>
+
+        <!-- Positions table -->
+        <div class="tableWrap" style="margin-top:14px;">
+          <table class="table" id="posTable">
+            <thead>
+              <tr>
+                <th style="width:110px;">Ticker</th>
+                <th style="width:140px;">Type</th>
+                <th style="width:140px;">Expiry</th>
+                <th style="width:120px; text-align:right;">Contracts</th>
+                <th style="width:110px; text-align:right;">Width</th>
+                <th style="width:130px; text-align:right;">Net Credit</th>
+                <th style="width:150px; text-align:right;">Max Profit</th>
+                <th style="width:150px; text-align:right;">Max Risk</th>
+                <th style="width:70px; text-align:center;">Del</th>
+              </tr>
+            </thead>
+            <tbody id="posTbody">
+              <!-- rows injected by JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="hintRow" style="margin-top:10px; opacity:.7; font-size:12px;">
+          Tip: Width in $ (e.g., 10). Net Credit per share (e.g., 1.25). Totals = sum of rows.
+        </div>
+      </section>
+
     <div class="hint">Tap a row to lock highlight. Use SPY/QQQ/IWM buttons to auto-fill base.</div>
   </div>
   
