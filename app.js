@@ -220,27 +220,101 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   
   async function fetchSPXQuote(){
-  const res = await fetch("https://api.api-ninjas.com/v1/stockprice?ticker=%5EGSPC", {
-    headers: {
-      "X-Api-Key": "xk34vvu0oNhxf0U3IWpE5Uf0bgEeDNyDpiHGHb2F"
-    }
-  });
-  const data = await res.json();
-  const last = Number(data.price);
-  const prevClose = Number(data.previous_close);
-  const dayPct = ((last / prevClose) - 1) * 100;
+    const res = await fetch("https://api.api-ninjas.com/v1/stockprice?ticker=%5EGSPC", {
+      headers: {
+        "X-Api-Key": "xk34vvu0oNhxf0U3IWpE5Uf0bgEeDNyDpiHGHb2F"
+      }
+    });
 
-  return { last, prevClose, dayPct };
+    if (!res.ok) throw new Error("SPX quote fetch failed");
+
+    const data = await res.json();
+    const last = Number(data.price);
+
+    if (!Number.isFinite(last)) throw new Error("No SPX last price");
+
+    return {
+      last,
+      prevClose: NaN,
+      dayPct: NaN,
+      updated: Number(data.updated)
+    };
+  }
+
+  async function fetchSPXHistoricalDaily(days = 400){
+    const end = Math.floor(Date.now() / 1000);
+    const start = end - (days * 86400);
+
+    console.log("fetchSPXHistoricalDaily days =", days);
+    console.log("fetchSPXHistoricalDaily start =", start);
+    console.log("fetchSPXHistoricalDaily end =", end);
+    console.log("diff days =", (end - start) / 86400);
+
+    const url = `https://api.api-ninjas.com/v1/stockpricehistorical?ticker=%5EGSPC&period=1d&start=${start}&end=${end}`;
+    const res = await fetch(url, {
+      headers: {
+        "X-Api-Key": "xk34vvu0oNhxf0U3IWpE5Uf0bgEeDNyDpiHGHb2F"
+      }
+    });
+    if (!res.ok) throw new Error("SPX historical fetch failed");
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length < 2) throw new Error("Not enough SPX historical data");
+
+    return data;
+  }
+
+  async function fetchSPXDailyChange(){
+    const bars = await fetchSPXHistoricalDaily(10);
+
+    const valid = bars
+      .map(x => ({ time: Number(x.time), close: Number(x.close) }))
+      .filter(x => Number.isFinite(x.time) && Number.isFinite(x.close))
+      .sort((a, b) => b.time - a.time);
+
+    if (valid.length < 2) return NaN;
+
+    const last = valid[0].close;
+    const prev = valid[1].close;
+
+    if (!(prev > 0)) return NaN;
+
+    return ((last / prev) - 1) * 100;
+ }
+
+ function isoWeekKeyFromDate(d){
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
+  function buildWeeklySeriesFromDailyBars(dailyBars){
+    const asc = [...dailyBars]
+      .map(x => ({ time: Number(x.time), close: Number(x.close) }))
+      .filter(x => Number.isFinite(x.time) && Number.isFinite(x.close))
+      .sort((a, b) => a.time - b.time);
+
+    const byWeek = new Map();
+
+    for (const bar of asc){
+      const d = new Date(bar.time * 1000);
+      const wk = isoWeekKeyFromDate(d);
+
+      byWeek.set(wk, {
+        datetime: d.toISOString().slice(0, 10),
+        close: bar.close
+      });
+    }
+
+    return Array.from(byWeek.values()).reverse().slice(0, 53);
+  }
+
   async function fetchPriorWeekClose(symbol){
-    const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=5&apikey=${API_KEY}`;
-    const res = await fetch(url, { cache: "no-store" });
-    const data = await res.json();
-    if (data.status === "error") throw new Error(data.message || "API error");
-    const values = data.values;
-    if (!Array.isArray(values) || values.length < 2) throw new Error("Not enough weekly data");
-    const close = Number(values[1].close); // prior completed week close
+    const values = await fetchWeeklySeries(symbol);
+    const close = Number(values?.[1]?.close);
+
     if (!Number.isFinite(close)) throw new Error("Bad close");
     return close;
   }
@@ -293,9 +367,15 @@ document.addEventListener("DOMContentLoaded", () => {
         setChangeBadge({ tf: "1W", pct });
       } else {
         px = q.last;
-        const dayPct = Number.isFinite(q.dayPct)
+        let dayPct = Number.isFinite(q.dayPct)
           ? q.dayPct
           : (Number.isFinite(q.prevClose) ? ((q.last / q.prevClose) - 1) * 100 : NaN);
+
+        if (symbol === "SPX" && !Number.isFinite(dayPct)) {
+          try {
+            dayPct = await fetchSPXDailyChange();
+          } catch {}
+        }
         setChangeBadge({ tf: "1D", pct: dayPct });
       }
       baseEl.value = px.toFixed(2);
@@ -312,12 +392,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function fetchWeeklySeries(symbol){
+    if (symbol === "SPX"){
+      const dailyBars = await fetchSPXHistoricalDaily(400);
+      const weekly = buildWeeklySeriesFromDailyBars(dailyBars);
+
+      if (!Array.isArray(weekly) || weekly.length < 2) {
+        throw new Error("Not enough weekly data");
+      }
+      return weekly;
+    }
+
     const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=60&apikey=${API_KEY}`;
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
+
     if (data.status === "error") throw new Error(data.message || "API error");
     if (!Array.isArray(data.values) || data.values.length < 2) throw new Error("Not enough weekly data");
-    return data.values; // newest-first
+
+    return data.values;
   }
 
   async function getWeeklySeriesCached(symbol){
