@@ -313,10 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchPriorWeekClose(symbol){
     const values = await fetchWeeklySeries(symbol);
-    const close = Number(values?.[1]?.close);
-
-    if (!Number.isFinite(close)) throw new Error("Bad close");
-    return close;
+    return getPriorWeekCloseFromWeeklyValues(values);
   }
 
   function isoWeekKey(d = new Date()){
@@ -340,6 +337,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     const close = await fetchPriorWeekClose(symbol);
     localStorage.setItem(key, JSON.stringify({ weekKey: wk, close }));
+    return close;
+  }
+
+  function getPriorWeekCloseFromWeeklyValues(values){
+    if (!Array.isArray(values) || values.length === 0) {
+      throw new Error("No weekly values");
+    }
+
+    const currentWeekKey = isoWeekKey(new Date());
+
+    const firstDateStr = values[0]?.datetime;
+    if (!firstDateStr) throw new Error("Missing weekly datetime");
+
+    const firstDate = new Date(firstDateStr + "T00:00:00Z");
+    if (Number.isNaN(firstDate.getTime())) throw new Error("Bad weekly datetime");
+
+    const firstWeekKey = isoWeekKey(firstDate);
+
+    // If first row belongs to current week, then prior completed week is row 1
+    // Otherwise first row is already the last completed week
+    const idx = firstWeekKey === currentWeekKey ? 1 : 0;
+
+    const close = Number(values[idx]?.close);
+    if (!Number.isFinite(close)) throw new Error("Bad prior week close");
+
     return close;
   }
 
