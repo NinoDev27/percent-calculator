@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnSPY = $("btnSPY");
   const btnQQQ = $("btnQQQ");
   const btnIWM = $("btnIWM");
+  const btnSPX = $("btnSPX");
 
   const calcBtn = $("calc");
   const autoBtn = $("auto");
@@ -76,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   const API_KEY = "03263123023e425fbe5ec22a54a12363";
-  const etfButtons = [btnSPY, btnQQQ, btnIWM];
+  const etfButtons = [btnSPY, btnQQQ, btnIWM, btnSPX];
 
   function parseNum(v){
     if (typeof v !== "string") return NaN;
@@ -217,6 +218,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!Number.isFinite(last)) throw new Error("No last price");
     return { last, prevClose, dayPct };
   }
+  
+  async function fetchSPXQuote(){
+  const res = await fetch("https://api.api-ninjas.com/v1/stockprice?ticker=%5EGSPC", {
+    headers: {
+      "X-Api-Key": "xk34vvu0oNhxf0U3IWpE5Uf0bgEeDNyDpiHGHb2F"
+    }
+  });
+  const data = await res.json();
+  const last = Number(data.price);
+  const prevClose = Number(data.previous_close);
+  const dayPct = ((last / prevClose) - 1) * 100;
+
+  return { last, prevClose, dayPct };
+}
 
   async function fetchPriorWeekClose(symbol){
     const url = `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(symbol)}&interval=1week&outputsize=5&apikey=${API_KEY}`;
@@ -269,7 +284,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try{
       statusEl.textContent = "Fetching " + symbol;
-      const q = await fetchQuote(symbol);
+      const q = symbol === "SPX"? await fetchSPXQuote(): await fetchQuote(symbol);
       let px;
       if (usePriorWeekClose){
         const w1 = await getPriorWeekCloseCached(symbol);
@@ -404,6 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
   btnSPY.addEventListener("click", () => setBaseFromSymbol("SPY", btnSPY));
   btnQQQ.addEventListener("click", () => setBaseFromSymbol("QQQ", btnQQQ));
   btnIWM.addEventListener("click", () => setBaseFromSymbol("IWM", btnIWM));
+  btnSPX.addEventListener("click", () => setBaseFromSymbol("SPX", btnSPX));
 
   baseEl.addEventListener("input", () => {
     etfButtons.forEach(b => b.classList.remove("primary"));
@@ -792,7 +808,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Init
   buildTable();
-  setBaseFromSymbol("SPY", btnSPY);
+  setBaseFromSymbol("SPX", btnSPX);
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js");
