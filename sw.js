@@ -1,4 +1,4 @@
-const CACHE_NAME = "rangecalc-v11";
+const CACHE_NAME = "rangecalc-v12";
 
 // IMPORTANT: use absolute paths for GitHub Pages project sites
 // If your site is https://ninodev27.github.io/percent-calculator/ then BASE = "/percent-calculator/"
